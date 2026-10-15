@@ -1,3 +1,1 @@
-export function AppRoutes() {
-  return null
-}
+export {}
