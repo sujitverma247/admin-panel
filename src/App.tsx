@@ -12,6 +12,7 @@ import { AuditPage } from "@/pages/admin/AuditPage"
 import { BrandsPage } from "@/pages/catalog/BrandsPage"
 import { ProductsPage } from "@/pages/catalog/ProductsPage"
 import { PlansPage } from "@/pages/catalog/PlansPage"
+import { CustomerDetailPage } from "@/pages/customers/CustomerDetailPage"
 import { CustomersListPage } from "@/pages/customers/CustomersListPage"
 import { DashboardPage } from "@/pages/dashboard/DashboardPage"
 import { InvoicesListPage } from "@/pages/invoices/InvoicesListPage"
@@ -42,6 +43,7 @@ export default function App() {
             <Route path="plans" element={guard(P.productRead, <PlansPage />)} />
             <Route path="keys" element={guard(P.keyRead, <KeysListPage />)} />
             <Route path="customers" element={guard(P.customerRead, <CustomersListPage />)} />
+            <Route path="customers/:id" element={guard(P.customerRead, <CustomerDetailPage />)} />
             <Route path="orders" element={guard(P.paymentRead, <OrdersListPage />)} />
             <Route path="invoices" element={guard(P.invoiceRead, <InvoicesListPage />)} />
             <Route path="mail" element={guard(P.mailRead, <MailListPage />)} />
