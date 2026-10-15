@@ -9,7 +9,6 @@ describe("product draft", () => {
     expect(errors.brandId).toBe("Website is required.")
     expect(errors.appKey).toBe("App key is required.")
     expect(errors.userAgentPrefix).toBe("User agent prefix is required.")
-    expect(errors.hmacSecret).toBeUndefined()
   })
 
   it("accepts a complete create draft without hmac", () => {

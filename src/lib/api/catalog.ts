@@ -155,6 +155,100 @@ export function deleteProduct(token: string, id: number) {
   return api<{ ok: boolean; id: number }>(`/admin/products/${id}`, { method: "DELETE", token })
 }
 
+export type PlanRow = {
+  id: number
+  productId: number
+  productName?: string
+  productSlug?: string
+  gateway: string
+  planCode: string
+  code: string
+  displayName: string
+  durationDays: number
+  defaultMaxMachines: number
+  externalPlanId: string
+  isActive: boolean
+  licenseCount?: number
+  createdAt: string
+}
+
+export type PlanListQuery = {
+  page?: number
+  limit?: number
+  q?: string
+  status?: "all" | "active" | "inactive"
+  productId?: number
+  gateway?: string
+  from?: string
+  to?: string
+  sort?: string
+  dir?: "asc" | "desc"
+}
+
+export type PlanListResponse = {
+  plans: PlanRow[]
+  total: number
+  page: number
+  limit: number
+  counts: { total: number; active: number; inactive: number }
+  gateways: string[]
+}
+
+export type PlanWrite = {
+  displayName: string
+  code?: string
+  planCode?: string
+  productId?: number
+  gateway?: string
+  externalPlanId?: string
+  durationDays?: number
+  defaultMaxMachines?: number
+  isActive?: boolean
+}
+
+export function plansQuery(params: PlanListQuery = {}) {
+  const search = new URLSearchParams()
+  search.set("page", String(params.page && params.page > 0 ? params.page : 1))
+  search.set("limit", String(params.limit && ALLOWED_LIMITS.has(params.limit) ? params.limit : 10))
+  const q = params.q?.trim()
+  if (q) search.set("q", q)
+  if (params.status && params.status !== "all") search.set("status", params.status)
+  if (params.productId && params.productId > 0) search.set("productId", String(params.productId))
+  if (params.gateway) search.set("gateway", params.gateway)
+  if (params.from) search.set("from", params.from)
+  if (params.to) search.set("to", params.to)
+  if (params.sort) search.set("sort", params.sort)
+  if (params.dir) search.set("dir", params.dir)
+  return `/admin/gateway-plans?${search.toString()}`
+}
+
+export function listPlans(token: string, params: PlanListQuery = {}, signal?: AbortSignal) {
+  return api<PlanListResponse>(plansQuery(params), { token, signal })
+}
+
+export function createPlan(
+  token: string,
+  body: Required<Pick<PlanWrite, "displayName" | "code" | "productId" | "gateway" | "externalPlanId" | "durationDays">> & PlanWrite,
+) {
+  return api<{ plan: PlanRow }>("/admin/gateway-plans", {
+    method: "POST",
+    token,
+    body: { ...body, planCode: body.code },
+  })
+}
+
+export function updatePlan(token: string, id: number, body: PlanWrite) {
+  return api<{ plan: PlanRow }>(`/admin/gateway-plans/${id}`, {
+    method: "PUT",
+    token,
+    body: { ...body, planCode: body.code ?? body.planCode },
+  })
+}
+
+export function deletePlan(token: string, id: number) {
+  return api<{ ok: boolean; id: number }>(`/admin/gateway-plans/${id}`, { method: "DELETE", token })
+}
+
 export function toWebsiteError(err: unknown) {
   if (err instanceof NetworkError) return err.message
   if (err instanceof ApiError) {
@@ -221,4 +315,38 @@ export function toWebsiteDeleteError(err: unknown) {
     if (err.status === 404 || err.message === "brand not found") return "Website not found."
   }
   return "Unable to delete website."
+}
+
+export function toPlanError(err: unknown) {
+  if (err instanceof NetworkError) return err.message
+  if (err instanceof ApiError) {
+    if (err.status === 403) return "You do not have permission to change plans."
+    if (err.message === "missing displayName") return "Plan name is required."
+    if (err.message === "displayName too short" || err.message === "displayName too long")
+      return "Plan name must be 2–200 characters."
+    if (err.message.startsWith("code must")) return "Plan code must be 2–32 characters of a–z, 0–9, and hyphen."
+    if (err.message === "code already exists" || err.message === "mapping already exists")
+      return "This product already has that plan mapped for this gateway."
+    if (err.message === "missing productId" || err.message === "unknown productId") return "Product is required."
+    if (err.message === "missing gateway") return "Payment gateway is required."
+    if (err.message === "missing externalPlanId") return "Gateway plan ID is required."
+    if (err.message.startsWith("durationDays")) return "Duration must be between 1 and 36500 days."
+    if (err.message === "plan not found") return "Plan not found."
+    if (err.status === 409)
+      return err.message.includes("licenses") || err.message.includes("batches") || err.message.includes("orders") || err.message.includes("gateway")
+        ? "This plan is still used by licenses, orders, or key batches, so it cannot be deleted."
+        : "A plan with this code already exists."
+    if (err.status === 404) return "Plan not found."
+  }
+  return "Unable to save plan."
+}
+
+export function toPlanDeleteError(err: unknown) {
+  if (err instanceof NetworkError) return err.message
+  if (err instanceof ApiError) {
+    if (err.status === 403) return "You do not have permission to delete plans."
+    if (err.status === 409) return "This plan is still used by licenses, orders, or key batches, so it cannot be deleted."
+    if (err.status === 404 || err.message === "plan not found") return "Plan not found."
+  }
+  return "Unable to delete plan."
 }
