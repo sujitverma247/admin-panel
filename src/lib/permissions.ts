@@ -18,6 +18,7 @@ export const P = {
   supportWrite: "support.write",
   invoiceRead: "invoice.read",
   invoiceWrite: "invoice.write",
+  analyticsRead: "analytics.read",
 } as const
 
 export type Permission = (typeof P)[keyof typeof P]

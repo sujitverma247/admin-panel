@@ -1,100 +1,149 @@
-import type { ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { Link } from "react-router"
 import {
-  ActivityIcon,
-  CalendarIcon,
-  ChevronDownIcon,
-  CreditCardIcon,
-  DatabaseIcon,
-  FileTextIcon,
   HeadphonesIcon,
   KeyRoundIcon,
   MailIcon,
-  MessageCircleIcon,
   ShoppingCartIcon,
   TrendingUpIcon,
   UsersIcon,
 } from "lucide-react"
+import { useAuth } from "@/auth/AuthProvider"
 import { PageHeader } from "@/layout/PageHeader"
 import { StatusBadge } from "@/components/StatusBadge"
+import { overview, type AnalyticsOverview, type AnalyticsQuery } from "@/lib/api/analytics"
+import { ApiError, NetworkError } from "@/lib/api/client"
+import {
+  formatCount,
+  formatDayLabel,
+  formatMoney,
+  formatSignedInt,
+  formatSignedPct,
+  titleStatus,
+} from "@/lib/format"
 import { cn } from "@/lib/utils"
 import {
-  activationPoints,
-  chartLabels,
-  kpis,
-  orderBars,
-  recentOrders,
-  recentTickets,
-  systemStatus,
-} from "@/pages/dashboard/placeholder"
+  DashboardRange,
+  daysAgoUtc,
+  presetQuery,
+  todayUtc,
+  type RangePreset,
+} from "@/pages/dashboard/DashboardRange"
 
-const kpiIcons = {
-  licenses: KeyRoundIcon,
-  orders: ShoppingCartIcon,
-  customers: UsersIcon,
-  tickets: HeadphonesIcon,
-  mail: MailIcon,
-} as const
-
-const statusIcons = {
-  database: DatabaseIcon,
-  payments: CreditCardIcon,
-  mail: MailIcon,
-  telemetry: ActivityIcon,
-  support: MessageCircleIcon,
-  invoices: FileTextIcon,
-} as const
+const kpiMeta = [
+  { key: "licenses" as const, label: "Total Licenses", icon: KeyRoundIcon, iconBg: "bg-[#e8f0ff]", iconColor: "text-[#3b6cff]" },
+  { key: "paidOrders" as const, label: "Paid Orders", icon: ShoppingCartIcon, iconBg: "bg-[#e7f8ee]", iconColor: "text-[#22c55e]" },
+  { key: "customers" as const, label: "Customers", icon: UsersIcon, iconBg: "bg-[#fef6e6]", iconColor: "text-[#eab308]" },
+  { key: "openTickets" as const, label: "Open Tickets", icon: HeadphonesIcon, iconBg: "bg-[#f3e8ff]", iconColor: "text-[#a855f7]" },
+  { key: "pendingMail" as const, label: "Pending Mails", icon: MailIcon, iconBg: "bg-[#fde8e8]", iconColor: "text-[#ef4444]" },
+]
 
 export function DashboardPage() {
+  const { token } = useAuth()
+  const [preset, setPreset] = useState<RangePreset>("7d")
+  const [query, setQuery] = useState<AnalyticsQuery>({ days: 7 })
+  const [customFrom, setCustomFrom] = useState(daysAgoUtc(7))
+  const [customTo, setCustomTo] = useState(todayUtc())
+  const [refreshTick, setRefreshTick] = useState(0)
+  const [data, setData] = useState<AnalyticsOverview | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!token) return
+    let cancelled = false
+    setLoading(true)
+    overview(token, query)
+      .then((result) => {
+        if (!cancelled) {
+          setData(result)
+          setError(null)
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) setError(toDashboardError(err))
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [token, query, refreshTick])
+
+  const kpis = data
+    ? [
+        { ...kpiMeta[0], value: formatCount(data.kpis.licenses.total), delta: formatSignedPct(data.kpis.licenses.deltaPct), up: data.kpis.licenses.deltaPct >= 0 },
+        { ...kpiMeta[1], value: formatCount(data.kpis.paidOrders.total), delta: formatSignedPct(data.kpis.paidOrders.deltaPct), up: data.kpis.paidOrders.deltaPct >= 0 },
+        { ...kpiMeta[2], value: formatCount(data.kpis.customers.total), delta: formatSignedPct(data.kpis.customers.deltaPct), up: data.kpis.customers.deltaPct >= 0 },
+        { ...kpiMeta[3], value: formatCount(data.kpis.openTickets.total), delta: formatSignedInt(data.kpis.openTickets.delta), up: data.kpis.openTickets.delta >= 0 },
+        { ...kpiMeta[4], value: formatCount(data.kpis.pendingMail.total), delta: formatSignedInt(data.kpis.pendingMail.delta), up: data.kpis.pendingMail.delta >= 0 },
+      ]
+    : []
+
+  const labels = data?.series.labels.map(formatDayLabel) ?? []
+
   return (
     <div className="min-w-0 overflow-x-hidden">
       <PageHeader
         title="Dashboard"
-        description="Overview of your MasterServer license business"
+        description="Overview of licenses, orders, and support"
         actions={
-          <button
-            type="button"
-            className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#e8edf5] bg-white px-3 text-sm text-[#5b6478] shadow-[0_1px_2px_rgba(16,42,96,0.04)]"
-          >
-            <CalendarIcon className="size-4 text-[#8b93a7]" />
-            Oct 8, 2026 – Oct 15, 2026
-            <ChevronDownIcon className="size-4 text-[#8b93a7]" />
-          </button>
+          <DashboardRange
+            preset={preset}
+            customFrom={customFrom}
+            customTo={customTo}
+            loading={loading}
+            onPreset={(next) => {
+              setPreset(next)
+              if (next !== "custom") setQuery(presetQuery(next))
+              else {
+                setCustomFrom(query.from ?? daysAgoUtc(7))
+                setCustomTo(query.to ?? todayUtc())
+              }
+            }}
+            onCustomFrom={setCustomFrom}
+            onCustomTo={setCustomTo}
+            onApplyCustom={() => {
+              if (!customFrom || !customTo || customFrom > customTo) return
+              setQuery({ from: customFrom, to: customTo })
+            }}
+            onRefresh={() => setRefreshTick((n) => n + 1)}
+          />
         }
       />
 
+      {error ? (
+        <p className="mb-4 rounded-xl border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#b91c1c]">{error}</p>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {kpis.map((kpi) => {
-          const Icon = kpiIcons[kpi.key as keyof typeof kpiIcons]
+        {(loading && !data ? kpiMeta : kpis).map((kpi) => {
+          const Icon = kpi.icon
+          const loaded = "value" in kpi
           return (
             <div
               key={kpi.key}
               className="min-w-0 overflow-hidden rounded-2xl border border-[#e8edf5] bg-white p-4 shadow-[0_1px_2px_rgba(16,42,96,0.04)]"
             >
               <div className="flex items-start gap-3">
-                <div
-                  className={cn(
-                    "flex size-10 shrink-0 items-center justify-center rounded-xl",
-                    kpi.iconBg,
-                    kpi.iconColor,
-                  )}
-                >
+                <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl", kpi.iconBg, kpi.iconColor)}>
                   <Icon className="size-5" strokeWidth={1.75} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs text-[#8b93a7]">{kpi.label}</p>
                   <p className="mt-0.5 text-[1.55rem] leading-none font-semibold tracking-tight text-[#0f1f3d]">
-                    {kpi.value}
+                    {loaded ? kpi.value : "—"}
                   </p>
                   <p
                     className={cn(
                       "mt-2 flex min-w-0 items-center gap-1 text-[11px]",
-                      kpi.tone === "up" ? "text-[#16a34a]" : "text-[#dc2626]",
+                      loaded && kpi.up ? "text-[#16a34a]" : "text-[#dc2626]",
                     )}
                   >
                     <TrendingUpIcon className="size-3 shrink-0" />
-                    <span className="font-medium">{kpi.delta}</span>
-                    <span className="min-w-0 truncate text-[#8b93a7]">vs previous 7 days</span>
+                    <span className="font-medium">{loaded ? kpi.delta : "…"}</span>
+                    <span className="min-w-0 truncate text-[#8b93a7]">vs previous period</span>
                   </p>
                 </div>
               </div>
@@ -104,21 +153,15 @@ export function DashboardPage() {
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <ChartCard
-          title="Orders"
-          description="Paid orders in the selected period"
-        >
-          <BarChart values={orderBars} labels={chartLabels} />
+        <ChartCard title="Orders" description="Paid orders in the selected period">
+          <BarChart values={data?.series.paidOrders ?? []} labels={labels} />
         </ChartCard>
-        <ChartCard
-          title="License Activations"
-          description="New activations in the selected period"
-        >
-          <LineChart values={activationPoints} labels={chartLabels} />
+        <ChartCard title="License Activations" description="New activations in the selected period">
+          <LineChart values={data?.series.activations ?? []} labels={labels} />
         </ChartCard>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)_minmax(0,0.85fr)]">
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Panel
           title="Recent Orders"
           action={
@@ -128,32 +171,40 @@ export function DashboardPage() {
           }
         >
           <div className="no-scrollbar overflow-x-auto">
-          <table className="w-full text-left text-[13px]">
-            <thead className="text-[11px] tracking-wide text-[#8b93a7] uppercase">
-              <tr>
-                <th className="pb-3 font-medium">Order ID</th>
-                <th className="pb-3 font-medium">Customer</th>
-                <th className="pb-3 font-medium">Amount</th>
-                <th className="pb-3 font-medium">Status</th>
-                <th className="pb-3 text-right font-medium">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentOrders.map((order) => (
-                <tr key={order.id} className="border-t border-[#f0f3f8]">
-                  <td className="py-3 font-medium text-[#3b6cff]">{order.id}</td>
-                  <td className="py-3 text-[#5b6478]">{order.customer}</td>
-                  <td className="py-3 text-[#0f1f3d]">{order.amount}</td>
-                  <td className="py-3">
-                    <StatusBadge tone={order.status === "Paid" ? "success" : "warning"}>
-                      {order.status}
-                    </StatusBadge>
-                  </td>
-                  <td className="py-3 text-right text-[#8b93a7]">{order.date}</td>
+            <table className="w-full text-left text-[13px]">
+              <thead className="text-[11px] tracking-wide text-[#8b93a7] uppercase">
+                <tr>
+                  <th className="pb-3 font-medium">Order ID</th>
+                  <th className="pb-3 font-medium">Customer</th>
+                  <th className="pb-3 font-medium">Amount</th>
+                  <th className="pb-3 font-medium">Status</th>
+                  <th className="pb-3 text-right font-medium">Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {(data?.recentOrders.length ?? 0) === 0 ? (
+                  <tr>
+                    <td className="border-t border-[#f0f3f8] py-6 text-[#8b93a7]" colSpan={5}>
+                      {loading ? "Loading…" : "No orders yet"}
+                    </td>
+                  </tr>
+                ) : (
+                  data!.recentOrders.map((order) => (
+                    <tr key={order.publicId} className="border-t border-[#f0f3f8]">
+                      <td className="py-3 pr-3 font-medium whitespace-nowrap text-[#3b6cff]">{shortId(order.publicId)}</td>
+                      <td className="max-w-[10rem] truncate py-3 pr-3 text-[#5b6478]">{order.customerEmail || "—"}</td>
+                      <td className="py-3 pr-3 whitespace-nowrap text-[#0f1f3d]">{formatMoney(order.amount, order.currency)}</td>
+                      <td className="py-3">
+                        <StatusBadge tone={order.status === "paid" ? "success" : "warning"}>
+                          {titleStatus(order.status)}
+                        </StatusBadge>
+                      </td>
+                      <td className="py-3 text-right text-[#8b93a7]">{formatDayLabel(order.createdAt.slice(0, 10))}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </Panel>
 
@@ -166,101 +217,73 @@ export function DashboardPage() {
           }
         >
           <div className="no-scrollbar overflow-x-auto">
-          <table className="w-full text-left text-[13px]">
-            <thead className="text-[11px] tracking-wide text-[#8b93a7] uppercase">
-              <tr>
-                <th className="pb-3 font-medium">Ticket ID</th>
-                <th className="pb-3 font-medium">Subject</th>
-                <th className="pb-3 font-medium">Status</th>
-                <th className="pb-3 text-right font-medium">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentTickets.map((ticket) => (
-                <tr key={ticket.id} className="border-t border-[#f0f3f8]">
-                  <td className="py-3 font-medium text-[#3b6cff]">{ticket.id}</td>
-                  <td className="py-3 text-[#5b6478]">{ticket.subject}</td>
-                  <td className="py-3">
-                    <StatusBadge
-                      tone={
-                        ticket.status === "Open"
-                          ? "danger"
-                          : ticket.status === "Waiting"
-                            ? "warning"
-                            : "muted"
-                      }
-                    >
-                      {ticket.status}
-                    </StatusBadge>
-                  </td>
-                  <td className="py-3 text-right text-[#8b93a7]">{ticket.date}</td>
+            <table className="w-full text-left text-[13px]">
+              <thead className="text-[11px] tracking-wide text-[#8b93a7] uppercase">
+                <tr>
+                  <th className="pb-3 font-medium">Ticket ID</th>
+                  <th className="pb-3 font-medium">Subject</th>
+                  <th className="pb-3 font-medium">Status</th>
+                  <th className="pb-3 text-right font-medium">Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {(data?.recentTickets.length ?? 0) === 0 ? (
+                  <tr>
+                    <td className="border-t border-[#f0f3f8] py-6 text-[#8b93a7]" colSpan={4}>
+                      {loading ? "Loading…" : "No tickets yet"}
+                    </td>
+                  </tr>
+                ) : (
+                  data!.recentTickets.map((ticket) => (
+                    <tr key={ticket.publicId} className="border-t border-[#f0f3f8]">
+                      <td className="py-3 pr-3 font-medium whitespace-nowrap text-[#3b6cff]">{shortId(ticket.publicId)}</td>
+                      <td className="max-w-[12rem] truncate py-3 pr-3 text-[#5b6478]">{ticket.subject}</td>
+                      <td className="py-3">
+                        <StatusBadge
+                          tone={
+                            ticket.status === "open" ? "danger" : ticket.status === "waiting" ? "warning" : "muted"
+                          }
+                        >
+                          {titleStatus(ticket.status)}
+                        </StatusBadge>
+                      </td>
+                      <td className="py-3 text-right text-[#8b93a7]">{formatDayLabel(ticket.updatedAt.slice(0, 10))}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-        </Panel>
-
-        <Panel title="System Status">
-          <ul className="space-y-3">
-            {systemStatus.map((item) => {
-              const Icon = statusIcons[item.icon]
-              return (
-                <li key={item.label} className="flex items-center gap-3 text-sm">
-                  <Icon className="size-4 text-[#8b93a7]" strokeWidth={1.75} />
-                  <span className="flex-1 text-[#0f1f3d]">{item.label}</span>
-                  <span className="flex items-center gap-1.5 text-xs font-medium text-[#16a34a]">
-                    <span className="size-2 rounded-full bg-[#22c55e]" />
-                    Online
-                  </span>
-                </li>
-              )
-            })}
-          </ul>
         </Panel>
       </div>
     </div>
   )
 }
 
-function ChartCard({
-  title,
-  description,
-  children,
-}: {
-  title: string
-  description: string
-  children: ReactNode
-}) {
+function shortId(id: string) {
+  return id.length <= 8 ? id : id.slice(0, 8)
+}
+
+function toDashboardError(err: unknown) {
+  if (err instanceof NetworkError) return err.message
+  if (err instanceof ApiError && err.status === 401) return "Your session expired. Sign in again."
+  if (err instanceof ApiError && err.status === 403) return "You do not have access to analytics."
+  return "Unable to load dashboard data."
+}
+
+function ChartCard({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return (
     <div className="min-w-0 overflow-hidden rounded-2xl border border-[#e8edf5] bg-white p-5 shadow-[0_1px_2px_rgba(16,42,96,0.04)]">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-base font-semibold text-[#0f1f3d]">{title}</h2>
-          <p className="text-xs text-[#8b93a7]">{description}</p>
-        </div>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1 rounded-lg border border-[#e8edf5] px-2.5 py-1 text-xs text-[#5b6478]"
-        >
-          Last 7 days
-          <ChevronDownIcon className="size-3.5" />
-        </button>
+      <div className="mb-4">
+        <h2 className="text-base font-semibold text-[#0f1f3d]">{title}</h2>
+        <p className="text-xs text-[#8b93a7]">{description}</p>
       </div>
       {children}
     </div>
   )
 }
 
-function Panel({
-  title,
-  action,
-  children,
-}: {
-  title: string
-  action?: ReactNode
-  children: ReactNode
-}) {
+function Panel({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
   return (
     <div className="min-w-0 overflow-hidden rounded-2xl border border-[#e8edf5] bg-white p-5 shadow-[0_1px_2px_rgba(16,42,96,0.04)]">
       <div className="mb-3 flex items-center justify-between gap-3">
@@ -272,9 +295,16 @@ function Panel({
   )
 }
 
+function chartScale(values: number[]) {
+  const peak = Math.max(1, ...values, 0)
+  const step = Math.max(1, Math.ceil(peak / 4))
+  const max = step * 4
+  return { max, ticks: [max, max - step, max - 2 * step, max - 3 * step, 0] }
+}
+
 function BarChart({ values, labels }: { values: number[]; labels: string[] }) {
-  const max = 50
-  const ticks = [50, 40, 30, 20, 10, 0]
+  const { max, ticks } = chartScale(values)
+  const bars = labels.length > 0 ? labels.map((label, i) => ({ label, value: values[i] ?? 0 })) : [{ label: "—", value: 0 }]
 
   return (
     <div className="flex h-44 min-w-0 gap-3">
@@ -290,15 +320,13 @@ function BarChart({ values, labels }: { values: number[]; labels: string[] }) {
           ))}
         </div>
         <div className="relative flex h-full items-end gap-2 pb-6 sm:gap-3">
-          {values.map((value, index) => (
-            <div key={labels[index]} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end">
+          {bars.map((bar) => (
+            <div key={bar.label} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end">
               <div
                 className="w-full max-w-9 rounded-t-md bg-[#7ba6ff]"
-                style={{ height: `${(value / max) * 100}%` }}
+                style={{ height: `${(bar.value / max) * 100}%` }}
               />
-              <span className="mt-2 text-[10px] whitespace-nowrap text-[#9aa3b5] sm:text-[11px]">
-                {labels[index]}
-              </span>
+              <span className="mt-2 text-[10px] whitespace-nowrap text-[#9aa3b5] sm:text-[11px]">{bar.label}</span>
             </div>
           ))}
         </div>
@@ -308,17 +336,17 @@ function BarChart({ values, labels }: { values: number[]; labels: string[] }) {
 }
 
 function LineChart({ values, labels }: { values: number[]; labels: string[] }) {
-  const max = 50
+  const { max, ticks } = chartScale(values)
   const width = 560
   const height = 180
-  const points = values.map((value, index) => {
-    const x = (index / (values.length - 1)) * width
+  const series = values.length > 0 ? values : [0]
+  const points = series.map((value, index) => {
+    const x = series.length === 1 ? width / 2 : (index / (series.length - 1)) * width
     const y = height - (value / max) * height
     return { x, y }
   })
   const line = points.map((point, index) => `${index === 0 ? "M" : "L"}${point.x} ${point.y}`).join(" ")
   const area = `${line} L${width} ${height} L0 ${height} Z`
-  const ticks = [50, 40, 30, 20, 10, 0]
 
   return (
     <div className="flex h-44 min-w-0 gap-3">
@@ -347,7 +375,7 @@ function LineChart({ values, labels }: { values: number[]; labels: string[] }) {
           ))}
         </svg>
         <div className="mt-1 flex justify-between text-[10px] text-[#9aa3b5] sm:text-[11px]">
-          {labels.map((label) => (
+          {(labels.length > 0 ? labels : ["—"]).map((label) => (
             <span key={label}>{label}</span>
           ))}
         </div>

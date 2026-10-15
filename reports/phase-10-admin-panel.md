@@ -22,8 +22,12 @@ Validation uses Zod as the single flow: schemas in `src/lib/schemas/`, `parseFor
 
 Login errors are mapped to user-facing copy (`Incorrect username or password.`, unreachable API, etc.). The API 401 text matches. CORS `ADMIN_ORIGIN` must include the Vite origin (`localhost` and `127.0.0.1` on :5173).
 
+## Dashboard (live data)
+
+The dashboard calls `GET /admin/analytics/overview?days=7` (see `master-server/reports/phase-11-analytics.md`).
+Placeholder KPI/chart/table data was removed. System Status is not shown.
+
 ## Not started
 
-- App shell / sidebar
-- Remaining admin screens
+- Remaining admin list/detail screens
 - TanStack Query list modules
