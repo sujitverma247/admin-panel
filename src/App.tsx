@@ -15,6 +15,7 @@ import { PlansPage } from "@/pages/catalog/PlansPage"
 import { CustomerDetailPage } from "@/pages/customers/CustomerDetailPage"
 import { CustomersListPage } from "@/pages/customers/CustomersListPage"
 import { DashboardPage } from "@/pages/dashboard/DashboardPage"
+import { InvoiceDetailPage } from "@/pages/invoices/InvoiceDetailPage"
 import { InvoicesListPage } from "@/pages/invoices/InvoicesListPage"
 import { KeysListPage } from "@/pages/keys/KeysListPage"
 import { LoginPage } from "@/pages/login/LoginPage"
@@ -48,6 +49,7 @@ export default function App() {
             <Route path="orders" element={guard(P.paymentRead, <OrdersListPage />)} />
             <Route path="orders/:id" element={guard(P.paymentRead, <OrderDetailPage />)} />
             <Route path="invoices" element={guard(P.invoiceRead, <InvoicesListPage />)} />
+            <Route path="invoices/:id" element={guard(P.invoiceRead, <InvoiceDetailPage />)} />
             <Route path="mail" element={guard(P.mailRead, <MailListPage />)} />
             <Route path="machines" element={guard(P.telemetryRead, <MachinesPage />)} />
             <Route path="heartbeats" element={guard(P.telemetryRead, <HeartbeatsPage />)} />

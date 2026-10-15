@@ -33,9 +33,9 @@ export function CopyableText({
       title={copied ? "Copied" : `Copy ${label ?? text}`}
       aria-label={copied ? "Copied" : `Copy ${label ?? text}`}
       onClick={() => void copy()}
-      className={cn("inline-flex max-w-full items-center gap-1.5 text-left hover:text-[#3b6cff]", className)}
+      className={cn("inline-flex min-w-0 max-w-full items-start gap-1.5 text-left hover:text-[#3b6cff]", className)}
     >
-      <span>{text}</span>
+      <span className="min-w-0 break-all">{text}</span>
       {copied ? (
         <span className="rounded-full bg-[#e7f8ee] px-2 py-0.5 text-[10px] font-medium text-[#16a34a]">Copied</span>
       ) : null}

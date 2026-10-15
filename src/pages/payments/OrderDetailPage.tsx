@@ -6,7 +6,7 @@ import { useAuth } from "@/auth/AuthProvider"
 import { ConfirmDialog } from "@/components/ConfirmDialog"
 import { CopyableText } from "@/components/CopyableText"
 import { StatusBadge } from "@/components/StatusBadge"
-import { ListPageFrame } from "@/components/TableScroll"
+import { ListPageFrame, TableScroll } from "@/components/TableScroll"
 import { API_BASE } from "@/lib/api/client"
 import {
   getOrder,
@@ -117,8 +117,9 @@ export function OrderDetailPage() {
       ) : null}
 
       {order ? (
-        <div className="min-h-0 flex-1 space-y-4 overflow-auto">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <TableScroll>
+          <div className="min-w-0 space-y-4 pb-2">
+          <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <Card label="Status">
               <StatusBadge tone={statusTone(order.status)}>{titleStatus(order.status)}</StatusBadge>
             </Card>
@@ -134,8 +135,8 @@ export function OrderDetailPage() {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <section className="rounded-2xl border border-[#e8edf5] bg-white p-4 shadow-[0_1px_2px_rgba(16,42,96,0.04)]">
+          <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
+            <section className="min-w-0 rounded-2xl border border-[#e8edf5] bg-white p-4 shadow-[0_1px_2px_rgba(16,42,96,0.04)]">
               <h2 className="text-sm font-semibold text-[#0f1f3d]">Customer</h2>
               <dl className="mt-3 space-y-3 text-sm">
                 <Row label="Name">
@@ -156,7 +157,7 @@ export function OrderDetailPage() {
               </dl>
             </section>
 
-            <section className="rounded-2xl border border-[#e8edf5] bg-white p-4 shadow-[0_1px_2px_rgba(16,42,96,0.04)]">
+            <section className="min-w-0 rounded-2xl border border-[#e8edf5] bg-white p-4 shadow-[0_1px_2px_rgba(16,42,96,0.04)]">
               <h2 className="text-sm font-semibold text-[#0f1f3d]">Payment</h2>
               <dl className="mt-3 space-y-3 text-sm">
                 <Row label="Order ID">
@@ -184,7 +185,7 @@ export function OrderDetailPage() {
             </section>
           </div>
 
-          <section className="rounded-2xl border border-[#e8edf5] bg-white p-4 shadow-[0_1px_2px_rgba(16,42,96,0.04)]">
+          <section className="min-w-0 rounded-2xl border border-[#e8edf5] bg-white p-4 shadow-[0_1px_2px_rgba(16,42,96,0.04)]">
             <h2 className="text-sm font-semibold text-[#0f1f3d]">License</h2>
             <dl className="mt-3 space-y-3 text-sm">
               <Row label="Key">
@@ -193,7 +194,8 @@ export function OrderDetailPage() {
               <Row label="License ID">{order.licenseId ?? "—"}</Row>
             </dl>
           </section>
-        </div>
+          </div>
+        </TableScroll>
       ) : null}
 
       {confirm === "paid" && order ? (
@@ -214,18 +216,18 @@ export function OrderDetailPage() {
 
 function Card({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-[#e8edf5] bg-white p-4 shadow-[0_1px_2px_rgba(16,42,96,0.04)]">
+    <div className="min-w-0 rounded-2xl border border-[#e8edf5] bg-white p-4 shadow-[0_1px_2px_rgba(16,42,96,0.04)]">
       <p className="text-xs text-[#8b93a7]">{label}</p>
-      <div className="mt-1">{children}</div>
+      <div className="mt-1 min-w-0">{children}</div>
     </div>
   )
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-4">
+    <div className="flex min-w-0 items-start justify-between gap-4">
       <dt className="shrink-0 text-[#8b93a7]">{label}</dt>
-      <dd className="min-w-0 text-right text-[#0f1f3d]">{children}</dd>
+      <dd className="min-w-0 wrap-break-word text-right text-[#0f1f3d]">{children}</dd>
     </div>
   )
 }
