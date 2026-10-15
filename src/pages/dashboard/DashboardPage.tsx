@@ -10,7 +10,9 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/auth/AuthProvider"
 import { PageHeader } from "@/layout/PageHeader"
+import { CopyableText } from "@/components/CopyableText"
 import { StatusBadge } from "@/components/StatusBadge"
+import { listTableClass, TableScroll } from "@/components/TableScroll"
 import { overview, type AnalyticsOverview, type AnalyticsQuery } from "@/lib/api/analytics"
 import { ApiError, NetworkError } from "@/lib/api/client"
 import {
@@ -190,14 +192,14 @@ export function DashboardPage() {
             </Link>
           }
         >
-          <div className="no-scrollbar overflow-x-auto">
-            <table className="w-full text-left text-[13px]">
-              <thead className="text-[11px] tracking-wide text-[#8b93a7] uppercase">
+          <TableScroll className="max-h-72 flex-none">
+            <table className={listTableClass}>
+              <thead className="sticky top-0 z-10 bg-white text-[11px] tracking-wide text-[#8b93a7] uppercase">
                 <tr>
-                  <th className="pb-3 font-medium">Order ID</th>
-                  <th className="pb-3 font-medium">Customer</th>
-                  <th className="pb-3 font-medium">Amount</th>
-                  <th className="pb-3 font-medium">Status</th>
+                  <th className="pb-3 pr-4 font-medium">Order ID</th>
+                  <th className="pb-3 pr-4 font-medium">Customer</th>
+                  <th className="pb-3 pr-4 font-medium">Amount</th>
+                  <th className="pb-3 pr-4 font-medium">Status</th>
                   <th className="pb-3 text-right font-medium">Date</th>
                 </tr>
               </thead>
@@ -211,21 +213,23 @@ export function DashboardPage() {
                 ) : (
                   data!.recentOrders.map((order) => (
                     <tr key={order.publicId} className="border-t border-[#f0f3f8]">
-                      <td className="py-3 pr-3 font-medium whitespace-nowrap text-[#3b6cff]">{shortId(order.publicId)}</td>
-                      <td className="max-w-[10rem] truncate py-3 pr-3 text-[#5b6478]">{order.customerEmail || "—"}</td>
-                      <td className="py-3 pr-3 whitespace-nowrap text-[#0f1f3d]">{formatMoney(order.amount, order.currency)}</td>
-                      <td className="py-3">
+                      <td className="py-3 pr-4 font-medium whitespace-nowrap text-[#3b6cff]">{order.publicId}</td>
+                      <td className="py-3 pr-4 whitespace-nowrap text-[#5b6478]">
+                        <CopyableText value={order.customerEmail} label="email" />
+                      </td>
+                      <td className="py-3 pr-4 whitespace-nowrap text-[#0f1f3d]">{formatMoney(order.amount, order.currency)}</td>
+                      <td className="py-3 pr-4">
                         <StatusBadge tone={order.status === "paid" ? "success" : "warning"}>
                           {titleStatus(order.status)}
                         </StatusBadge>
                       </td>
-                      <td className="py-3 text-right text-[#8b93a7]">{formatDayLabel(order.createdAt.slice(0, 10))}</td>
+                      <td className="py-3 whitespace-nowrap text-right text-[#8b93a7]">{formatDayLabel(order.createdAt.slice(0, 10))}</td>
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
-          </div>
+          </TableScroll>
         </Panel>
 
         <Panel
@@ -236,13 +240,13 @@ export function DashboardPage() {
             </Link>
           }
         >
-          <div className="no-scrollbar overflow-x-auto">
-            <table className="w-full text-left text-[13px]">
-              <thead className="text-[11px] tracking-wide text-[#8b93a7] uppercase">
+          <TableScroll className="max-h-72 flex-none">
+            <table className={listTableClass}>
+              <thead className="sticky top-0 z-10 bg-white text-[11px] tracking-wide text-[#8b93a7] uppercase">
                 <tr>
-                  <th className="pb-3 font-medium">Ticket ID</th>
-                  <th className="pb-3 font-medium">Subject</th>
-                  <th className="pb-3 font-medium">Status</th>
+                  <th className="pb-3 pr-4 font-medium">Ticket ID</th>
+                  <th className="pb-3 pr-4 font-medium">Subject</th>
+                  <th className="pb-3 pr-4 font-medium">Status</th>
                   <th className="pb-3 text-right font-medium">Date</th>
                 </tr>
               </thead>
@@ -256,9 +260,9 @@ export function DashboardPage() {
                 ) : (
                   data!.recentTickets.map((ticket) => (
                     <tr key={ticket.publicId} className="border-t border-[#f0f3f8]">
-                      <td className="py-3 pr-3 font-medium whitespace-nowrap text-[#3b6cff]">{shortId(ticket.publicId)}</td>
-                      <td className="max-w-[12rem] truncate py-3 pr-3 text-[#5b6478]">{ticket.subject}</td>
-                      <td className="py-3">
+                      <td className="py-3 pr-4 font-medium whitespace-nowrap text-[#3b6cff]">{ticket.publicId}</td>
+                      <td className="py-3 pr-4 whitespace-nowrap text-[#5b6478]">{ticket.subject}</td>
+                      <td className="py-3 pr-4">
                         <StatusBadge
                           tone={
                             ticket.status === "open" ? "danger" : ticket.status === "waiting" ? "warning" : "muted"
@@ -267,21 +271,17 @@ export function DashboardPage() {
                           {titleStatus(ticket.status)}
                         </StatusBadge>
                       </td>
-                      <td className="py-3 text-right text-[#8b93a7]">{formatDayLabel(ticket.updatedAt.slice(0, 10))}</td>
+                      <td className="py-3 whitespace-nowrap text-right text-[#8b93a7]">{formatDayLabel(ticket.updatedAt.slice(0, 10))}</td>
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
-          </div>
+          </TableScroll>
         </Panel>
       </div>
     </div>
   )
-}
-
-function shortId(id: string) {
-  return id.length <= 8 ? id : id.slice(0, 8)
 }
 
 function toDashboardError(err: unknown) {

@@ -16,6 +16,7 @@ import { useAuth } from "@/auth/AuthProvider"
 import { ConfirmDialog } from "@/components/ConfirmDialog"
 import { PaginationLimit, type PageSize } from "@/components/PaginationLimit"
 import { StatusBadge } from "@/components/StatusBadge"
+import { ListPageFrame, listTableClass, TableScroll } from "@/components/TableScroll"
 import { Input } from "@/components/ui/input"
 import {
   createBrand,
@@ -255,8 +256,8 @@ export function BrandsPage() {
   }
 
   return (
-    <div className="min-w-0">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <ListPageFrame>
+      <div className="mb-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-[1.7rem] leading-none font-semibold tracking-tight text-[#0f1f3d]">Websites</h1>
           <p className="mt-1.5 text-sm text-[#8b93a7]">Manage websites for your products</p>
@@ -274,10 +275,10 @@ export function BrandsPage() {
       </div>
 
       {error ? (
-        <p className="mb-4 rounded-xl border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#b91c1c]">{error}</p>
+        <p className="mb-4 shrink-0 rounded-xl border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#b91c1c]">{error}</p>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid shrink-0 grid-cols-1 gap-4 sm:grid-cols-3">
         <Kpi icon={GlobeIcon} iconClass="bg-[#e8f0ff] text-[#3b6cff]" label="Total Websites" value={formatCount(counts.total)} />
         <Kpi icon={CheckCircle2Icon} iconClass="bg-[#e7f8ee] text-[#22c55e]" label="Active Websites" value={formatCount(counts.active)} />
         <Kpi
@@ -288,8 +289,8 @@ export function BrandsPage() {
         />
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-[#e8edf5] bg-white shadow-[0_1px_2px_rgba(16,42,96,0.04)]">
-        <div className="flex flex-wrap items-center gap-2 border-b border-[#f0f3f8] px-4 py-3">
+      <div className="mt-4 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#e8edf5] bg-white shadow-[0_1px_2px_rgba(16,42,96,0.04)]">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[#f0f3f8] px-4 py-3">
           <div className="relative min-w-[12rem] flex-1">
             <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#9aa3b5]" />
             <Input
@@ -364,9 +365,9 @@ export function BrandsPage() {
           </button>
         </div>
 
-        <div className="no-scrollbar overflow-x-auto">
-          <table className="w-full min-w-[62rem] text-left text-[13px]">
-            <thead className="text-[11px] tracking-wide text-[#8b93a7] uppercase">
+        <TableScroll>
+          <table className={listTableClass}>
+            <thead className="sticky top-0 z-10 bg-white text-[11px] tracking-wide text-[#8b93a7] uppercase">
               <tr>
                 <th className="px-4 py-3 font-medium">#</th>
                 <th className="px-4 py-3 font-medium">Logo</th>
@@ -401,7 +402,7 @@ export function BrandsPage() {
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap font-medium text-[#0f1f3d]">{row.name}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-[#5b6478]">{row.slug}</td>
-                    <td className="max-w-[16rem] truncate px-4 py-3 text-[#5b6478]">{row.websiteUrl || "—"}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-[#5b6478]">{row.websiteUrl || "—"}</td>
                     <td className="px-4 py-3 text-[#0f1f3d]">{row.productCount ?? 0}</td>
                     <td className="px-4 py-3">
                       <StatusBadge tone={row.isActive ? "success" : "danger"}>
@@ -440,9 +441,9 @@ export function BrandsPage() {
               )}
             </tbody>
           </table>
-        </div>
+        </TableScroll>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#f0f3f8] px-4 py-3 text-sm text-[#8b93a7]">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-[#f0f3f8] px-4 py-3 text-sm text-[#8b93a7]">
           <p>
             Showing {from} to {to} of {formatCount(total)} websites
           </p>
@@ -542,7 +543,7 @@ export function BrandsPage() {
           onConfirm={() => void applyDelete(confirm.row)}
         />
       ) : null}
-    </div>
+    </ListPageFrame>
   )
 }
 

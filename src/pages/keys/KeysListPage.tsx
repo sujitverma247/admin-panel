@@ -17,8 +17,10 @@ import {
 import { toast } from "react-toastify"
 import { useAuth } from "@/auth/AuthProvider"
 import { ConfirmDialog } from "@/components/ConfirmDialog"
+import { CopyableText, writeClipboard } from "@/components/CopyableText"
 import { PaginationLimit, type PageSize } from "@/components/PaginationLimit"
 import { StatusBadge } from "@/components/StatusBadge"
+import { listTableClass, TableScroll } from "@/components/TableScroll"
 import { Input } from "@/components/ui/input"
 import { listCatalogPlans, listProducts, type CatalogPlanRow, type ProductRow } from "@/lib/api/catalog"
 import {
@@ -440,24 +442,11 @@ export function KeysListPage() {
           </button>
         </div>
 
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
-          <table className="w-full table-fixed text-left text-[13px]">
-            <colgroup>
-              <col className="w-[3%]" />
-              <col className="w-[19%]" />
-              <col className="w-[9%]" />
-              <col className="w-[6%]" />
-              <col className="w-[7%]" />
-              <col className="w-[9%]" />
-              <col className="w-[9%]" />
-              <col className="w-[9%]" />
-              <col className="w-[13%]" />
-              <col className="w-[7%]" />
-              <col className="w-[9%]" />
-            </colgroup>
+        <TableScroll>
+          <table className={listTableClass}>
             <thead className="sticky top-0 z-10 bg-white text-[11px] tracking-wide text-[#8b93a7] uppercase">
               <tr>
-                <th className="px-3 py-3 font-medium">#</th>
+                <th className="px-4 py-3 font-medium">#</th>
                 <SortHeader label="Key" column="key" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
                 <SortHeader label="Product" column="product" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
                 <SortHeader label="Plan" column="plan" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
@@ -467,22 +456,24 @@ export function KeysListPage() {
                 <SortHeader label="Expires" column="expires" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
                 <SortHeader label="Customer" column="customer" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
                 <SortHeader label="Source" column="source" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
-                <th className="px-3 py-3 text-right font-medium">Actions</th>
+                <th className="sticky right-0 z-20 bg-white px-3 py-3 text-right font-medium shadow-[-12px_0_16px_-10px_rgba(15,31,61,0.18)]">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-3 py-10 text-center text-sm text-[#8b93a7]">
+                  <td colSpan={11} className="px-4 py-10 text-center text-sm text-[#8b93a7]">
                     {loading ? "Loading keys…" : filtersActive ? "No keys match this search." : "No keys yet"}
                   </td>
                 </tr>
               ) : (
                 rows.map((row, index) => (
                   <tr key={row.id} className="border-t border-[#f0f3f8]">
-                    <td className="px-3 py-3 text-[#8b93a7]">{from + index}</td>
-                    <td className="px-3 py-3">
-                      <div className="flex min-w-0 items-center gap-1.5">
+                    <td className="px-4 py-3 text-[#8b93a7]">{from + index}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
                         <button
                           type="button"
                           aria-label={copiedId === row.id ? "Copied" : `Copy ${row.key}`}
@@ -496,36 +487,34 @@ export function KeysListPage() {
                           type="button"
                           title={copiedId === row.id ? "Copied" : "Copy key"}
                           onClick={() => void copyText(row.key, row.id)}
-                          className="min-w-0 truncate font-mono text-[#0f1f3d] hover:text-[#3b6cff]"
+                          className="font-mono text-[#0f1f3d] hover:text-[#3b6cff]"
                         >
                           {row.key}
                         </button>
                         {copiedId === row.id ? (
-                          <span className="shrink-0 rounded-full bg-[#e7f8ee] px-2 py-0.5 text-[10px] font-medium text-[#16a34a]">Copied</span>
+                          <span className="rounded-full bg-[#e7f8ee] px-2 py-0.5 text-[10px] font-medium text-[#16a34a]">Copied</span>
                         ) : null}
                       </div>
                     </td>
-                    <td className="truncate px-3 py-3 text-[#0f1f3d]" title={row.productName || undefined}>
-                      {row.productName || "—"}
-                    </td>
-                    <td className="truncate px-3 py-3 text-[#5b6478]">{row.planType}</td>
-                    <td className="px-3 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap text-[#0f1f3d]">{row.productName || "—"}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-[#5b6478]">{row.planType}</td>
+                    <td className="px-4 py-3">
                       <StatusBadge tone={statusTone(row.status)}>{titleCase(row.status)}</StatusBadge>
                     </td>
-                    <td className="px-3 py-3 text-[#8b93a7]">
+                    <td className="px-4 py-3 whitespace-nowrap text-[#8b93a7]">
                       <DateCell value={row.purchasedAt || row.createdAt} />
                     </td>
-                    <td className="px-3 py-3 text-[#8b93a7]">
+                    <td className="px-4 py-3 whitespace-nowrap text-[#8b93a7]">
                       <DateCell value={row.activatedAt} />
                     </td>
-                    <td className="px-3 py-3 text-[#8b93a7]">
+                    <td className="px-4 py-3 whitespace-nowrap text-[#8b93a7]">
                       <DateCell value={row.expiresAt} />
                     </td>
-                    <td className="truncate px-3 py-3 text-[#5b6478]" title={row.customerEmail || undefined}>
-                      {row.customerEmail || "—"}
+                    <td className="px-4 py-3 whitespace-nowrap text-[#5b6478]">
+                      <CopyableText value={row.customerEmail} label="email" />
                     </td>
-                    <td className="truncate px-3 py-3 text-[#5b6478]">{row.source || "manual"}</td>
-                    <td className="px-3 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap text-[#5b6478]">{row.source || "manual"}</td>
+                    <td className="sticky right-0 z-10 bg-white px-3 py-3 shadow-[-12px_0_16px_-10px_rgba(15,31,61,0.18)]">
                       <div className="flex items-center justify-end gap-1">
                         <IconAction
                           label={evidenceId === row.id ? `Preparing evidence for ${row.key}` : `Download evidence ${row.key}`}
@@ -552,7 +541,7 @@ export function KeysListPage() {
               )}
             </tbody>
           </table>
-        </div>
+        </TableScroll>
 
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-[#f0f3f8] px-4 py-3 text-sm text-[#8b93a7]">
           <p>
@@ -656,23 +645,6 @@ export function KeysListPage() {
   )
 }
 
-async function writeClipboard(value: string) {
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(value)
-    return
-  }
-  const field = document.createElement("textarea")
-  field.value = value
-  field.setAttribute("readonly", "")
-  field.style.position = "fixed"
-  field.style.left = "-9999px"
-  document.body.appendChild(field)
-  field.select()
-  const ok = document.execCommand("copy")
-  document.body.removeChild(field)
-  if (!ok) throw new Error("copy failed")
-}
-
 function planFilterOptions(fromKeys: string[], catalog: CatalogPlanRow[]) {
   return [...new Set([...fromKeys, ...catalog.map((p) => p.code)].filter(Boolean))]
 }
@@ -702,7 +674,7 @@ function SortHeader({
   onSort: (column: SortKey) => void
 }) {
   return (
-    <th className="px-3 py-3 font-medium">
+    <th className="px-4 py-3 font-medium">
       <SortHeaderButton label={label} column={column} sortKey={sortKey} sortDir={sortDir} onSort={onSort} />
     </th>
   )

@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from "react"
 import { CheckIcon, CopyIcon, XIcon } from "lucide-react"
+import { CopyableText } from "@/components/CopyableText"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import type { CatalogPlanRow, ProductRow } from "@/lib/api/catalog"
@@ -122,7 +123,9 @@ export function IssueKeyDialog({
               </div>
               <div>
                 <dt className="text-[#8b93a7]">Email</dt>
-                <dd className="truncate text-[#0f1f3d]">{issued.email}</dd>
+                <dd className="text-[#0f1f3d]">
+                  <CopyableText value={issued.email} label="email" className="text-[#0f1f3d]" />
+                </dd>
               </div>
               <div>
                 <dt className="text-[#8b93a7]">Plan</dt>
