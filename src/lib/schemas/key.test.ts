@@ -25,6 +25,7 @@ describe("issue key draft", () => {
         planType: "1year",
         maxMachines: "3",
         notes: "Retail",
+        locale: "en",
       }),
     ).toEqual({})
   })

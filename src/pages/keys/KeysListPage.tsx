@@ -205,6 +205,7 @@ export function KeysListPage() {
         planType: draft.planType,
         maxMachines: Number(draft.maxMachines),
         notes: draft.notes.trim() || undefined,
+        locale: draft.locale,
       })
       setIssued(body)
       setCopied(false)

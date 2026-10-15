@@ -26,6 +26,7 @@ export type IssueKeyDraft = {
   planType: string
   maxMachines: string
   notes: string
+  locale: string
 }
 
 export type IssueKeyField = keyof IssueKeyDraft
@@ -39,6 +40,7 @@ export function emptyIssueKeyDraft(): IssueKeyDraft {
     planType: "1year",
     maxMachines: "3",
     notes: "",
+    locale: "en",
   }
 }
 
@@ -54,6 +56,7 @@ const issueKeySchema = z.object({
   planType: z.string().trim().min(1, "Plan is required."),
   maxMachines: maxMachinesSchema,
   notes: z.string().trim().max(KEY_NOTES_MAX, `Notes must be at most ${KEY_NOTES_MAX} characters.`),
+  locale: z.enum(["en", "de"], { message: "Language is required." }),
 })
 
 export function validateIssueKeyDraft(draft: IssueKeyDraft): IssueKeyFieldErrors {

@@ -66,6 +66,7 @@ export type IssueKeyWrite = {
   planType: string
   maxMachines: number
   notes?: string
+  locale?: string
 }
 
 const ALLOWED_LIMITS = new Set([10, 20, 50, 100])

@@ -294,6 +294,28 @@ export function IssueKeyDialog({
                 </Field>
               </div>
 
+              <div className="space-y-1.5">
+                <Label htmlFor="issue-locale" className="text-sm font-medium text-[#1b2a4a]">
+                  Mail language
+                </Label>
+                <select
+                  id="issue-locale"
+                  value={draft.locale}
+                  aria-invalid={Boolean(fieldErrors.locale)}
+                  onChange={(e) => onChange({ ...draft, locale: e.target.value }, "locale")}
+                  className={cn(
+                    "h-10 w-full rounded-xl border bg-white px-3 text-sm text-[#0f1f3d] outline-none focus-visible:ring-3",
+                    fieldErrors.locale
+                      ? "border-[#fecaca] focus-visible:border-[#dc2626] focus-visible:ring-[#dc2626]/20"
+                      : "border-[#e8edf5] focus-visible:border-[#3b6cff] focus-visible:ring-[#3b6cff]/20",
+                  )}
+                >
+                  <option value="en">English</option>
+                  <option value="de">German</option>
+                </select>
+                <p className="text-[12px] text-[#8b93a7]">License mail uses this language, the same as checkout OS language.</p>
+              </div>
+
               <Field id="issue-notes" label="Notes" value={draft.notes} max={KEY_NOTES_MAX} hint="Optional internal note." error={fieldErrors.notes}>
                 <Input
                   id="issue-notes"
