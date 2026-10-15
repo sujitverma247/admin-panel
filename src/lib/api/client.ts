@@ -48,6 +48,39 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   return res.json() as Promise<T>
 }
 
+export async function apiBlob(
+  path: string,
+  token: string,
+  signal?: AbortSignal,
+  fallbackName = "download.pdf",
+): Promise<{ blob: Blob; fileName: string }> {
+  let res: Response
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      cache: "no-store",
+      signal,
+      headers: { Authorization: `Bearer ${token}` },
+    })
+  } catch (err) {
+    if (signal?.aborted || (err instanceof DOMException && err.name === "AbortError")) throw err
+    throw new NetworkError()
+  }
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  const blob = await res.blob()
+  const fileName = fileNameFromDisposition(res.headers.get("Content-Disposition")) || fallbackName
+  return { blob, fileName }
+}
+
+function fileNameFromDisposition(header: string | null) {
+  if (!header) return ""
+  const star = /filename\*=UTF-8''([^;]+)/i.exec(header)
+  if (star) return decodeURIComponent(star[1])
+  const quoted = /filename="([^"]+)"/i.exec(header)
+  if (quoted) return quoted[1]
+  const plain = /filename=([^;]+)/i.exec(header)
+  return plain ? plain[1].trim() : ""
+}
+
 export function toLoginError(err: unknown): string {
   if (err instanceof NetworkError) return err.message
   if (err instanceof ApiError) {

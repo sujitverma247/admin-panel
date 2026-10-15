@@ -226,6 +226,19 @@ export function listPlans(token: string, params: PlanListQuery = {}, signal?: Ab
   return api<PlanListResponse>(plansQuery(params), { token, signal })
 }
 
+export type CatalogPlanRow = {
+  id: number
+  code: string
+  displayName: string
+  durationDays: number
+  defaultMaxMachines: number
+  isActive: boolean
+}
+
+export function listCatalogPlans(token: string, signal?: AbortSignal) {
+  return api<{ plans: CatalogPlanRow[] }>("/admin/plans?status=active&limit=100&sort=name&dir=asc", { token, signal })
+}
+
 export function createPlan(
   token: string,
   body: Required<Pick<PlanWrite, "displayName" | "code" | "productId" | "gateway" | "externalPlanId" | "durationDays">> & PlanWrite,

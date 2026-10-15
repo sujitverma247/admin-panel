@@ -35,7 +35,7 @@ export const navItems: NavItem[] = [
   { to: "/brands", label: "Websites", icon: GlobeIcon, permission: P.productRead },
   { to: "/products", label: "Products", icon: PackageIcon, permission: P.productRead },
   { to: "/plans", label: "Plans", icon: CreditCardIcon, permission: P.productRead },
-  { to: "/keys", label: "License Keys", icon: KeyRoundIcon, permission: P.keyRead },
+  { to: "/keys", label: "Keys", icon: KeyRoundIcon, permission: P.keyRead },
   { to: "/customers", label: "Customers", icon: UsersIcon, permission: P.customerRead },
   { to: "/orders", label: "Orders & Payments", icon: WalletIcon, permission: P.paymentRead },
   { to: "/invoices", label: "Invoices", icon: FileTextIcon, permission: P.invoiceRead },
