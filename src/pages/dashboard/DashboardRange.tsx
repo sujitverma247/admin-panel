@@ -6,6 +6,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import type { AnalyticsQuery } from "@/lib/api/analytics"
+import { formatRange } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
 export type RangePreset = "7d" | "30d" | "365d" | "custom"
@@ -22,7 +23,9 @@ export function presetQuery(preset: Exclude<RangePreset, "custom">): AnalyticsQu
 }
 
 export function presetLabel(preset: RangePreset, customFrom: string, customTo: string) {
-  if (preset === "custom" && customFrom && customTo) return `${customFrom} – ${customTo}`
+  if (preset === "custom" && customFrom && customTo) {
+    return formatRange(customFrom, customTo) || "Custom"
+  }
   if (preset === "custom") return "Custom"
   return RANGE_PRESETS.find((item) => item.id === preset)?.label ?? "Last 7 days"
 }
@@ -41,8 +44,10 @@ export function DashboardRange({
   preset,
   customFrom,
   customTo,
+  pickingCustom,
   loading,
   onPreset,
+  onStartCustom,
   onCustomFrom,
   onCustomTo,
   onApplyCustom,
@@ -51,8 +56,10 @@ export function DashboardRange({
   preset: RangePreset
   customFrom: string
   customTo: string
+  pickingCustom: boolean
   loading: boolean
-  onPreset: (preset: RangePreset) => void
+  onPreset: (preset: Exclude<RangePreset, "custom">) => void
+  onStartCustom: () => void
   onCustomFrom: (value: string) => void
   onCustomTo: (value: string) => void
   onApplyCustom: () => void
@@ -66,30 +73,13 @@ export function DashboardRange({
       <button
         type="button"
         onClick={onRefresh}
-        disabled={loading}
-        className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#e8edf5] bg-white px-3 text-sm text-[#5b6478] shadow-[0_1px_2px_rgba(16,42,96,0.04)] hover:bg-[#f8fafc] disabled:opacity-60"
+        className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#e8edf5] bg-white px-3 text-sm text-[#5b6478] shadow-[0_1px_2px_rgba(16,42,96,0.04)] hover:bg-[#f8fafc]"
       >
         <RefreshCwIcon className={cn("size-4 text-[#8b93a7]", loading && "animate-spin")} />
         Refresh
       </button>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#e8edf5] bg-white px-3 text-sm text-[#5b6478] shadow-[0_1px_2px_rgba(16,42,96,0.04)] outline-none hover:bg-[#f8fafc]">
-          <CalendarIcon className="size-4 text-[#8b93a7]" />
-          <span className="max-w-[14rem] truncate">{presetLabel(preset, customFrom, customTo)}</span>
-          <ChevronDownIcon className="size-4 text-[#8b93a7]" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-44">
-          {RANGE_PRESETS.map((item) => (
-            <DropdownMenuItem key={item.id} onSelect={() => onPreset(item.id)}>
-              {item.label}
-            </DropdownMenuItem>
-          ))}
-          <DropdownMenuItem onSelect={() => onPreset("custom")}>Custom</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      {preset === "custom" ? (
+      {pickingCustom ? (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[#e8edf5] bg-white px-2 py-1.5 shadow-[0_1px_2px_rgba(16,42,96,0.04)]">
           <input
             type="date"
@@ -118,7 +108,23 @@ export function DashboardRange({
             Apply
           </button>
         </div>
-      ) : null}
+      ) : (
+        <DropdownMenu>
+          <DropdownMenuTrigger className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#e8edf5] bg-white px-3 text-sm text-[#5b6478] shadow-[0_1px_2px_rgba(16,42,96,0.04)] outline-none hover:bg-[#f8fafc]">
+            <CalendarIcon className="size-4 text-[#8b93a7]" />
+            <span className="max-w-[16rem] truncate">{presetLabel(preset, customFrom, customTo)}</span>
+            <ChevronDownIcon className="size-4 text-[#8b93a7]" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-44">
+            {RANGE_PRESETS.map((item) => (
+              <DropdownMenuItem key={item.id} onSelect={() => onPreset(item.id)}>
+                {item.label}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuItem onSelect={() => onStartCustom()}>Custom</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   )
 }

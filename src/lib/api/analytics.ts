@@ -53,7 +53,7 @@ export type AnalyticsQuery =
   | { days: number; from?: undefined; to?: undefined }
   | { days?: undefined; from: string; to: string }
 
-export function overview(token: string, query: AnalyticsQuery = { days: 7 }) {
+export function overview(token: string, query: AnalyticsQuery = { days: 7 }, signal?: AbortSignal) {
   const params = new URLSearchParams()
   if (query.from && query.to) {
     params.set("from", query.from)
@@ -61,5 +61,5 @@ export function overview(token: string, query: AnalyticsQuery = { days: 7 }) {
   } else {
     params.set("days", String(query.days ?? 7))
   }
-  return api<AnalyticsOverview>(`/admin/analytics/overview?${params.toString()}`, { token })
+  return api<AnalyticsOverview>(`/admin/analytics/overview?${params.toString()}`, { token, signal })
 }

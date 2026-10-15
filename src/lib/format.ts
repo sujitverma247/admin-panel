@@ -46,9 +46,76 @@ export function formatDayLabel(isoDate: string) {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" })
 }
 
+export function formatChartTick(isoDate: string, opts?: { emphasizeYear?: boolean }) {
+  if (/^\d{4}-\d{2}$/.test(isoDate)) {
+    const month = new Date(`${isoDate}-01T00:00:00Z`)
+    if (Number.isNaN(month.getTime())) return isoDate
+    return month.toLocaleDateString(undefined, {
+      month: "short",
+      ...(opts?.emphasizeYear ? { year: "2-digit" as const } : {}),
+      timeZone: "UTC",
+    })
+  }
+  return formatDayLabel(isoDate)
+}
+
+export type ChartBucketKind = "day" | "week" | "month"
+
+export function chartBucketKind(labels: string[]): ChartBucketKind {
+  if (labels.length === 0) return "day"
+  if (labels.every((label) => /^\d{4}-\d{2}$/.test(label))) return "month"
+  if (labels.length >= 2) {
+    const first = Date.parse(`${labels[0]}T00:00:00Z`)
+    const second = Date.parse(`${labels[1]}T00:00:00Z`)
+    if (Number.isFinite(first) && Number.isFinite(second) && second - first >= 6 * 86_400_000) return "week"
+  }
+  return "day"
+}
+
+export function formatChartPointLabel(isoDate: string, kind: ChartBucketKind = "day") {
+  if (kind === "month" || /^\d{4}-\d{2}$/.test(isoDate)) {
+    const month = new Date(`${isoDate.length === 7 ? isoDate : isoDate.slice(0, 7)}-01T00:00:00Z`)
+    if (Number.isNaN(month.getTime())) return isoDate
+    return month.toLocaleDateString(undefined, { month: "long", year: "numeric", timeZone: "UTC" })
+  }
+  const date = new Date(`${isoDate}T00:00:00Z`)
+  if (Number.isNaN(date.getTime())) return isoDate
+  const formatted = date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  })
+  return kind === "week" ? `Week of ${formatted}` : formatted
+}
+
+export function formatChartMetric(count: number, singular: string) {
+  const noun = count === 1 ? singular : `${singular}s`
+  return `${formatCount(count)} ${noun}`
+}
+
+/** Keep at most `maxTicks` axis labels so month/year charts do not overlap. */
+export function sparseChartLabels(labels: string[], maxTicks = 7): (string | null)[] {
+  if (labels.length === 0) return []
+  const monthly = labels.every((label) => /^\d{4}-\d{2}$/.test(label))
+  const limit = monthly ? 12 : maxTicks
+  const last = labels.length - 1
+  const show = Array.from({ length: labels.length }, () => labels.length <= limit)
+  if (labels.length > limit) {
+    const slots = Math.max(1, maxTicks - 1)
+    for (let i = 0; i < maxTicks; i++) {
+      show[Math.round((i * last) / slots)] = true
+    }
+  }
+  return labels.map((label, index) => {
+    if (!show[index]) return null
+    return formatChartTick(label, { emphasizeYear: monthly && (index === 0 || index === last) })
+  })
+}
+
 export function formatRange(fromIso: string, toIso: string) {
-  const from = new Date(fromIso)
-  const to = new Date(toIso)
+  const from = new Date(`${fromIso}T00:00:00Z`)
+  const to = new Date(`${toIso}T00:00:00Z`)
   if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return ""
   const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }
   return `${from.toLocaleDateString(undefined, opts)} – ${to.toLocaleDateString(undefined, opts)}`

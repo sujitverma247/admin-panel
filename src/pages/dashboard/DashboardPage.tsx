@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react"
 import { Link } from "react-router"
 import {
   HeadphonesIcon,
@@ -14,11 +14,15 @@ import { StatusBadge } from "@/components/StatusBadge"
 import { overview, type AnalyticsOverview, type AnalyticsQuery } from "@/lib/api/analytics"
 import { ApiError, NetworkError } from "@/lib/api/client"
 import {
+  chartBucketKind,
+  formatChartMetric,
+  formatChartPointLabel,
   formatCount,
   formatDayLabel,
   formatMoney,
   formatSignedInt,
   formatSignedPct,
+  sparseChartLabels,
   titleStatus,
 } from "@/lib/format"
 import { cn } from "@/lib/utils"
@@ -44,6 +48,7 @@ export function DashboardPage() {
   const [query, setQuery] = useState<AnalyticsQuery>({ days: 7 })
   const [customFrom, setCustomFrom] = useState(daysAgoUtc(7))
   const [customTo, setCustomTo] = useState(todayUtc())
+  const [pickingCustom, setPickingCustom] = useState(false)
   const [refreshTick, setRefreshTick] = useState(0)
   const [data, setData] = useState<AnalyticsOverview | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -51,25 +56,41 @@ export function DashboardPage() {
 
   useEffect(() => {
     if (!token) return
-    let cancelled = false
+    const ac = new AbortController()
     setLoading(true)
-    overview(token, query)
+    overview(token, query, ac.signal)
       .then((result) => {
-        if (!cancelled) {
-          setData(result)
-          setError(null)
-        }
+        setData(result)
+        setError(null)
       })
       .catch((err) => {
-        if (!cancelled) setError(toDashboardError(err))
+        if (ac.signal.aborted) return
+        setError(toDashboardError(err))
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (!ac.signal.aborted) setLoading(false)
       })
-    return () => {
-      cancelled = true
-    }
+    return () => ac.abort()
   }, [token, query, refreshTick])
+
+  function applyCustomRange() {
+    if (!customFrom || !customTo || customFrom > customTo) return
+    setPreset("custom")
+    setQuery({ from: customFrom, to: customTo })
+    setPickingCustom(false)
+  }
+
+  function startCustom() {
+    if (query.from && query.to) {
+      setCustomFrom(query.from)
+      setCustomTo(query.to)
+    } else {
+      const days = query.days ?? 7
+      setCustomFrom(daysAgoUtc(days))
+      setCustomTo(todayUtc())
+    }
+    setPickingCustom(true)
+  }
 
   const kpis = data
     ? [
@@ -81,7 +102,8 @@ export function DashboardPage() {
       ]
     : []
 
-  const labels = data?.series.labels.map(formatDayLabel) ?? []
+  const labels = data?.series.labels ?? []
+  const ticks = sparseChartLabels(labels)
 
   return (
     <div className="min-w-0 overflow-x-hidden">
@@ -93,22 +115,21 @@ export function DashboardPage() {
             preset={preset}
             customFrom={customFrom}
             customTo={customTo}
+            pickingCustom={pickingCustom}
             loading={loading}
             onPreset={(next) => {
+              setPickingCustom(false)
               setPreset(next)
-              if (next !== "custom") setQuery(presetQuery(next))
-              else {
-                setCustomFrom(query.from ?? daysAgoUtc(7))
-                setCustomTo(query.to ?? todayUtc())
-              }
+              setQuery(presetQuery(next))
             }}
+            onStartCustom={startCustom}
             onCustomFrom={setCustomFrom}
             onCustomTo={setCustomTo}
-            onApplyCustom={() => {
-              if (!customFrom || !customTo || customFrom > customTo) return
-              setQuery({ from: customFrom, to: customTo })
+            onApplyCustom={applyCustomRange}
+            onRefresh={() => {
+              if (pickingCustom) applyCustomRange()
+              setRefreshTick((n) => n + 1)
             }}
-            onRefresh={() => setRefreshTick((n) => n + 1)}
           />
         }
       />
@@ -118,9 +139,8 @@ export function DashboardPage() {
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {(loading && !data ? kpiMeta : kpis).map((kpi) => {
+        {(kpis.length === 0 ? kpiMeta.map((kpi) => ({ ...kpi, value: "—", delta: "…", up: true })) : kpis).map((kpi) => {
           const Icon = kpi.icon
-          const loaded = "value" in kpi
           return (
             <div
               key={kpi.key}
@@ -133,16 +153,16 @@ export function DashboardPage() {
                 <div className="min-w-0">
                   <p className="text-xs text-[#8b93a7]">{kpi.label}</p>
                   <p className="mt-0.5 text-[1.55rem] leading-none font-semibold tracking-tight text-[#0f1f3d]">
-                    {loaded ? kpi.value : "—"}
+                    {kpi.value}
                   </p>
                   <p
                     className={cn(
                       "mt-2 flex min-w-0 items-center gap-1 text-[11px]",
-                      loaded && kpi.up ? "text-[#16a34a]" : "text-[#dc2626]",
+                      kpi.up ? "text-[#16a34a]" : "text-[#dc2626]",
                     )}
                   >
                     <TrendingUpIcon className="size-3 shrink-0" />
-                    <span className="font-medium">{loaded ? kpi.delta : "…"}</span>
+                    <span className="font-medium">{kpi.delta}</span>
                     <span className="min-w-0 truncate text-[#8b93a7]">vs previous period</span>
                   </p>
                 </div>
@@ -154,10 +174,10 @@ export function DashboardPage() {
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ChartCard title="Orders" description="Paid orders in the selected period">
-          <BarChart values={data?.series.paidOrders ?? []} labels={labels} />
+          <BarChart values={data?.series.paidOrders ?? []} labels={labels} ticks={ticks} metric="paid order" />
         </ChartCard>
         <ChartCard title="License Activations" description="New activations in the selected period">
-          <LineChart values={data?.series.activations ?? []} labels={labels} />
+          <LineChart values={data?.series.activations ?? []} labels={labels} ticks={ticks} metric="activation" />
         </ChartCard>
       </div>
 
@@ -273,7 +293,7 @@ function toDashboardError(err: unknown) {
 
 function ChartCard({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return (
-    <div className="min-w-0 overflow-hidden rounded-2xl border border-[#e8edf5] bg-white p-5 shadow-[0_1px_2px_rgba(16,42,96,0.04)]">
+    <div className="min-w-0 overflow-visible rounded-2xl border border-[#e8edf5] bg-white p-5 shadow-[0_1px_2px_rgba(16,42,96,0.04)]">
       <div className="mb-4">
         <h2 className="text-base font-semibold text-[#0f1f3d]">{title}</h2>
         <p className="text-xs text-[#8b93a7]">{description}</p>
@@ -302,66 +322,188 @@ function chartScale(values: number[]) {
   return { max, ticks: [max, max - step, max - 2 * step, max - 3 * step, 0] }
 }
 
-function BarChart({ values, labels }: { values: number[]; labels: string[] }) {
-  const { max, ticks } = chartScale(values)
-  const bars = labels.length > 0 ? labels.map((label, i) => ({ label, value: values[i] ?? 0 })) : [{ label: "—", value: 0 }]
+function ChartAxisLabels({ ticks }: { ticks: (string | null)[] }) {
+  const axis = ticks.length > 0 ? ticks : [null]
+  return (
+    <div className="relative mt-1 h-4">
+      {axis.map((label, index) => {
+        if (!label) return null
+        const last = axis.length - 1
+        const left = axis.length === 1 ? 50 : ((index + 0.5) / axis.length) * 100
+        const transform = index === 0 ? "translateX(0)" : index === last ? "translateX(-100%)" : "translateX(-50%)"
+        return (
+          <span
+            key={index}
+            className="absolute top-0 text-[10px] whitespace-nowrap text-[#9aa3b5]"
+            style={{ left: `${left}%`, transform }}
+          >
+            {label}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
+function ChartTooltip({
+  index,
+  count,
+  label,
+  value,
+  metric,
+}: {
+  index: number
+  count: number
+  label: string
+  value: number
+  metric: string
+}) {
+  const left = count <= 1 ? 50 : ((index + 0.5) / count) * 100
+  const transform = index === 0 ? "translateX(0)" : index === count - 1 ? "translateX(-100%)" : "translateX(-50%)"
+  return (
+    <div
+      data-chart-tooltip=""
+      className="pointer-events-none absolute top-1 z-20 min-w-[7.5rem] rounded-lg bg-[#0f1f3d] px-2.5 py-1.5 shadow-[0_8px_20px_rgba(15,31,61,0.28)]"
+      style={{ left: `${left}%`, transform }}
+    >
+      <p className="text-[10px] leading-tight text-white/70">{label}</p>
+      <p className="mt-0.5 text-xs font-semibold text-white">{formatChartMetric(value, metric)}</p>
+    </div>
+  )
+}
+
+function BarChart({
+  values,
+  labels,
+  ticks,
+  metric,
+}: {
+  values: number[]
+  labels: string[]
+  ticks: (string | null)[]
+  metric: string
+}) {
+  const { max, ticks: yTicks } = chartScale(values)
+  const count = Math.max(labels.length, values.length, ticks.length, 1)
+  const dense = count > 14
+  const kind = chartBucketKind(labels)
+  const [hover, setHover] = useState<number | null>(null)
 
   return (
     <div className="flex h-44 min-w-0 gap-3">
       <div className="flex flex-col justify-between pb-6 text-[11px] text-[#9aa3b5]">
-        {ticks.map((tick) => (
+        {yTicks.map((tick) => (
           <span key={tick}>{tick}</span>
         ))}
       </div>
-      <div className="relative min-w-0 flex-1">
+      <div className="relative min-w-0 flex-1" onMouseLeave={() => setHover(null)}>
         <div className="absolute inset-x-0 inset-y-0 mb-6 flex flex-col justify-between">
-          {ticks.map((tick) => (
+          {yTicks.map((tick) => (
             <div key={tick} className="border-t border-[#eef2f7]" />
           ))}
         </div>
-        <div className="relative flex h-full items-end gap-2 pb-6 sm:gap-3">
-          {bars.map((bar) => (
-            <div key={bar.label} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end">
+        <div className={cn("relative flex h-[calc(100%-1.5rem)] items-end", dense ? "gap-px" : "gap-1.5 sm:gap-2")}>
+          {Array.from({ length: count }, (_, index) => {
+            const value = values[index] ?? 0
+            const pointLabel = formatChartPointLabel(labels[index] ?? "", kind)
+            return (
               <div
-                className="w-full max-w-9 rounded-t-md bg-[#7ba6ff]"
-                style={{ height: `${(bar.value / max) * 100}%` }}
-              />
-              <span className="mt-2 text-[10px] whitespace-nowrap text-[#9aa3b5] sm:text-[11px]">{bar.label}</span>
-            </div>
-          ))}
+                key={index}
+                className="flex h-full min-w-0 flex-1 cursor-default items-end justify-center rounded-t-sm"
+                role="img"
+                aria-label={`${pointLabel}: ${formatChartMetric(value, metric)}`}
+                onMouseEnter={() => setHover(index)}
+                onFocus={() => setHover(index)}
+                onClick={() => setHover(index)}
+              >
+                <div
+                  className={cn(
+                    "w-full max-w-9 rounded-t-md",
+                    hover === index ? "bg-[#3b6cff]" : "bg-[#7ba6ff]",
+                    value === 0 && "min-h-0",
+                  )}
+                  style={{ height: `${(value / max) * 100}%` }}
+                />
+              </div>
+            )
+          })}
         </div>
+        {hover != null ? (
+          <ChartTooltip
+            index={hover}
+            count={count}
+            label={formatChartPointLabel(labels[hover] ?? "", kind)}
+            value={values[hover] ?? 0}
+            metric={metric}
+          />
+        ) : null}
+        <ChartAxisLabels ticks={ticks.length === count ? ticks : sparseChartLabels(labels)} />
       </div>
     </div>
   )
 }
 
-function LineChart({ values, labels }: { values: number[]; labels: string[] }) {
-  const { max, ticks } = chartScale(values)
+function LineChart({
+  values,
+  labels,
+  ticks,
+  metric,
+}: {
+  values: number[]
+  labels: string[]
+  ticks: (string | null)[]
+  metric: string
+}) {
+  const { max, ticks: yTicks } = chartScale(values)
   const width = 560
   const height = 180
   const series = values.length > 0 ? values : [0]
+  const kind = chartBucketKind(labels)
+  const [hover, setHover] = useState<number | null>(null)
   const points = series.map((value, index) => {
-    const x = series.length === 1 ? width / 2 : (index / (series.length - 1)) * width
+    const x = series.length === 1 ? width / 2 : ((index + 0.5) / series.length) * width
     const y = height - (value / max) * height
-    return { x, y }
+    return { x, y, value }
   })
   const line = points.map((point, index) => `${index === 0 ? "M" : "L"}${point.x} ${point.y}`).join(" ")
-  const area = `${line} L${width} ${height} L0 ${height} Z`
+  const area = `${line} L${points[points.length - 1]?.x ?? width} ${height} L${points[0]?.x ?? 0} ${height} Z`
+  const showDots = series.length <= 14
+  const active = hover != null ? points[hover] : null
+
+  function onMove(event: MouseEvent<HTMLDivElement>) {
+    const rect = event.currentTarget.getBoundingClientRect()
+    const ratio = rect.width <= 0 ? 0 : (event.clientX - rect.left) / rect.width
+    const index = Math.max(0, Math.min(series.length - 1, Math.floor(ratio * series.length)))
+    setHover(index)
+  }
 
   return (
     <div className="flex h-44 min-w-0 gap-3">
       <div className="flex flex-col justify-between pb-6 text-[11px] text-[#9aa3b5]">
-        {ticks.map((tick) => (
+        {yTicks.map((tick) => (
           <span key={tick}>{tick}</span>
         ))}
       </div>
-      <div className="relative min-w-0 flex-1">
+      <div className="relative min-w-0 flex-1" onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
         <div className="absolute inset-x-0 inset-y-0 mb-6 flex flex-col justify-between">
-          {ticks.map((tick) => (
+          {yTicks.map((tick) => (
             <div key={tick} className="border-t border-[#eef2f7]" />
           ))}
         </div>
-        <svg viewBox={`0 0 ${width} ${height}`} className="h-[calc(100%-1.5rem)] w-full overflow-hidden" aria-hidden="true">
+        <div className="absolute inset-x-0 top-0 z-10 flex h-[calc(100%-1.5rem)]">
+          {series.map((value, index) => (
+            <div
+              key={index}
+              className="h-full min-w-0 flex-1"
+              role="img"
+              aria-label={`${formatChartPointLabel(labels[index] ?? "", kind)}: ${formatChartMetric(value, metric)}`}
+              onMouseEnter={() => setHover(index)}
+              onFocus={() => setHover(index)}
+              onClick={() => setHover(index)}
+            />
+          ))}
+        </div>
+        <svg viewBox={`0 0 ${width} ${height}`} className="relative h-[calc(100%-1.5rem)] w-full overflow-visible" aria-hidden="true">
           <defs>
             <linearGradient id="activationFill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#22c55e" stopOpacity="0.28" />
@@ -370,15 +512,43 @@ function LineChart({ values, labels }: { values: number[]; labels: string[] }) {
           </defs>
           <path d={area} fill="url(#activationFill)" />
           <path d={line} fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinejoin="round" />
-          {points.map((point) => (
-            <circle key={`${point.x}-${point.y}`} cx={point.x} cy={point.y} r="4" fill="#22c55e" stroke="#fff" strokeWidth="2" />
-          ))}
+          {active ? (
+            <line
+              x1={active.x}
+              x2={active.x}
+              y1="0"
+              y2={height}
+              stroke="#22c55e"
+              strokeOpacity="0.35"
+              strokeDasharray="4 4"
+            />
+          ) : null}
+          {showDots
+            ? points.map((point, index) => (
+                <circle
+                  key={index}
+                  cx={point.x}
+                  cy={point.y}
+                  r={hover === index ? 5 : 4}
+                  fill="#22c55e"
+                  stroke="#fff"
+                  strokeWidth="2"
+                />
+              ))
+            : active ? (
+                <circle cx={active.x} cy={active.y} r="5" fill="#22c55e" stroke="#fff" strokeWidth="2" />
+              ) : null}
         </svg>
-        <div className="mt-1 flex justify-between text-[10px] text-[#9aa3b5] sm:text-[11px]">
-          {(labels.length > 0 ? labels : ["—"]).map((label) => (
-            <span key={label}>{label}</span>
-          ))}
-        </div>
+        {hover != null ? (
+          <ChartTooltip
+            index={hover}
+            count={series.length}
+            label={formatChartPointLabel(labels[hover] ?? "", kind)}
+            value={series[hover] ?? 0}
+            metric={metric}
+          />
+        ) : null}
+        <ChartAxisLabels ticks={ticks.length === series.length ? ticks : sparseChartLabels(labels)} />
       </div>
     </div>
   )

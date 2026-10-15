@@ -9,7 +9,7 @@ import {
   LayoutDashboardIcon,
   MailIcon,
   PackageIcon,
-  TagIcon,
+  GlobeIcon,
   UserCogIcon,
   UsersIcon,
   WalletIcon,
@@ -32,7 +32,7 @@ export type NavItem = {
 
 export const navItems: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboardIcon },
-  { to: "/brands", label: "Brands", icon: TagIcon, permission: P.productRead },
+  { to: "/brands", label: "Websites", icon: GlobeIcon, permission: P.productRead },
   { to: "/products", label: "Products", icon: PackageIcon, permission: P.productRead },
   { to: "/plans", label: "Plans", icon: CreditCardIcon, permission: P.productRead },
   { to: "/keys", label: "License Keys", icon: KeyRoundIcon, permission: P.keyRead },

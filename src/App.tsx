@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
+import { createPortal } from "react-dom"
 import { BrowserRouter, Navigate, Route, Routes } from "react-router"
-import { Toaster } from "@/components/ui/sonner"
+import { ToastContainer } from "react-toastify"
 import { AuthProvider } from "@/auth/AuthProvider"
 import { RequireAuth } from "@/auth/RequireAuth"
 import { RequirePermission } from "@/auth/RequirePermission"
@@ -52,7 +53,20 @@ export default function App() {
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-        <Toaster />
+        {createPortal(
+          <ToastContainer
+            position="top-right"
+            autoClose={3500}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            pauseOnHover
+            draggable
+            theme="light"
+            style={{ zIndex: 100000 }}
+          />,
+          document.body,
+        )}
       </AuthProvider>
     </BrowserRouter>
   )

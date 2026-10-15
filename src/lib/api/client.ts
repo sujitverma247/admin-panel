@@ -27,6 +27,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   let res: Response
   try {
     res = await fetch(`${API_BASE}${path}`, {
+      cache: "no-store",
       ...init,
       headers: {
         ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
@@ -35,7 +36,8 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
       },
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     })
-  } catch {
+  } catch (err) {
+    if (init.signal?.aborted || (err instanceof DOMException && err.name === "AbortError")) throw err
     throw new NetworkError()
   }
 
