@@ -92,18 +92,11 @@ export function LoginPage() {
           <div className="pointer-events-none absolute right-8 bottom-28 size-56 rounded-full bg-[#1a3f96]/70" />
 
           <div className="relative mb-14 flex items-center gap-3">
-            <svg viewBox="0 0 32 32" className="size-11 shrink-0 text-white" aria-hidden="true">
-              <path
-                fill="currentColor"
-                d="M16 3.2 27 8v8.3c0 6.4-4.3 12.1-11 13.8C9.3 28.4 5 22.7 5 16.3V8l11-4.8Z"
-              />
-              <path
-                fill="#0b2468"
-                d="m13.1 16.7-2.4-2.4-1.4 1.4 3.8 3.8 7.1-7.1-1.4-1.4z"
-              />
-            </svg>
+            <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white">
+              <img src="/logo.png" alt="" className="size-11 object-contain" />
+            </div>
             <div>
-              <p className="text-[1.35rem] leading-none font-semibold tracking-tight">MasterServer</p>
+              <p className="text-[1.2rem] leading-none font-semibold tracking-tight">Europe Digi Server</p>
               <p className="mt-1 text-sm text-white/70">Admin Panel</p>
             </div>
           </div>
