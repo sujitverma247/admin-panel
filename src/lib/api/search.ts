@@ -81,9 +81,9 @@ export async function globalSearch(
           body.tickets.map((row) => ({
             kind: "ticket" as const,
             id: row.id,
-            title: row.subject,
-            subtitle: [row.publicId, row.customerEmail, row.status].filter(Boolean).join(" · "),
-            to: `/tickets?q=${encodeURIComponent(row.publicId)}`,
+            title: row.publicId,
+            subtitle: [row.subject, row.customerEmail, row.status].filter(Boolean).join(" · "),
+            to: `/tickets/${row.id}`,
           })),
       ),
     )

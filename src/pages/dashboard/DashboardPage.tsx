@@ -260,7 +260,11 @@ export function DashboardPage() {
                 ) : (
                   data!.recentTickets.map((ticket) => (
                     <tr key={ticket.publicId} className="border-t border-[#f0f3f8]">
-                      <td className="py-3 pr-4 font-medium whitespace-nowrap text-[#3b6cff]">{ticket.publicId}</td>
+                      <td className="py-3 pr-4 font-medium whitespace-nowrap">
+                        <Link to={`/tickets/${ticket.id}`} className="text-[#3b6cff] hover:underline">
+                          {ticket.publicId}
+                        </Link>
+                      </td>
                       <td className="py-3 pr-4 whitespace-nowrap text-[#5b6478]">{ticket.subject}</td>
                       <td className="py-3 pr-4">
                         <StatusBadge

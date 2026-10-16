@@ -23,6 +23,7 @@ import { MailDetailPage } from "@/pages/mail/MailDetailPage"
 import { MailListPage } from "@/pages/mail/MailListPage"
 import { OrderDetailPage } from "@/pages/payments/OrderDetailPage"
 import { OrdersListPage } from "@/pages/payments/OrdersListPage"
+import { TicketDetailPage } from "@/pages/support/TicketDetailPage"
 import { TicketsListPage } from "@/pages/support/TicketsListPage"
 import { HeartbeatsPage } from "@/pages/telemetry/HeartbeatsPage"
 import { MachinesPage } from "@/pages/telemetry/MachinesPage"
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="machines" element={guard(P.telemetryRead, <MachinesPage />)} />
             <Route path="heartbeats" element={guard(P.telemetryRead, <HeartbeatsPage />)} />
             <Route path="tickets" element={guard(P.supportRead, <TicketsListPage />)} />
+            <Route path="tickets/:id" element={guard(P.supportRead, <TicketDetailPage />)} />
             <Route path="users" element={guard(P.userManage, <UsersPage />)} />
             <Route path="audit" element={guard(P.auditRead, <AuditPage />)} />
           </Route>
