@@ -8,6 +8,7 @@ import { RequirePermission } from "@/auth/RequirePermission"
 import { AppShell } from "@/layout/AppShell"
 import { P, type Permission } from "@/lib/permissions"
 import { UsersPage } from "@/pages/admin/UsersPage"
+import { AuditDetailPage } from "@/pages/admin/AuditDetailPage"
 import { AuditPage } from "@/pages/admin/AuditPage"
 import { BrandsPage } from "@/pages/catalog/BrandsPage"
 import { ProductsPage } from "@/pages/catalog/ProductsPage"
@@ -60,6 +61,7 @@ export default function App() {
             <Route path="tickets/:id" element={guard(P.supportRead, <TicketDetailPage />)} />
             <Route path="users" element={guard(P.userManage, <UsersPage />)} />
             <Route path="audit" element={guard(P.auditRead, <AuditPage />)} />
+            <Route path="audit/:id" element={guard(P.auditRead, <AuditDetailPage />)} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

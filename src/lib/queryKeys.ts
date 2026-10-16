@@ -2,6 +2,7 @@ export const qk = {
   me: ["me"] as const,
   users: ["users"] as const,
   audit: ["audit"] as const,
+  auditItem: (id: number) => ["audit", id] as const,
   brands: ["brands"] as const,
   products: ["products"] as const,
   plans: ["plans"] as const,
