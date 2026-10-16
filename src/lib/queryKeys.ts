@@ -19,6 +19,7 @@ export const qk = {
   mail: ["mail"] as const,
   mailItem: (id: number) => ["mail", id] as const,
   machines: ["machines"] as const,
+  machine: (id: number) => ["machines", id] as const,
   heartbeats: ["heartbeats"] as const,
   analytics: (query: { days?: number; from?: string; to?: string }) => ["analytics", query] as const,
   tickets: ["tickets"] as const,
