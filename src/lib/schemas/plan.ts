@@ -16,7 +16,7 @@ export const PLAN_EXTERNAL_ID_MAX = 128
 export const PLAN_NAME_RANGE = `${PLAN_NAME_MIN}–${PLAN_NAME_MAX}`
 export const PLAN_CODE_RANGE = `${PLAN_CODE_MIN}–${PLAN_CODE_MAX}`
 
-export const PLAN_GATEWAYS = ["freemius", "dev", "manual"] as const
+export const PLAN_GATEWAYS = ["freemius", "dodo", "dev", "manual"] as const
 
 const PLAN_CODE = /^[a-z0-9-]{2,32}$/
 

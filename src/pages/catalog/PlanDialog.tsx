@@ -234,7 +234,7 @@ export function PlanDialog({
                 id="plan-external"
                 label="Gateway Plan ID"
                 required
-                hint="The plan/product ID from the payment gateway. Example: 68452"
+                hint="Freemius plan ID (e.g. 68452) or Dodo product ID (e.g. pdt_…)."
                 error={fieldErrors.externalPlanId}
                 value={draft.externalPlanId}
                 min={1}
