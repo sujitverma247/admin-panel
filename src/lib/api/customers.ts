@@ -32,10 +32,26 @@ export type CustomerAcceptance = {
   acceptedAt: string
 }
 
+export type CustomerCheckout = {
+  ip: string
+  device: string
+  os: string
+  browser: string
+  language: string
+  timezone: string
+  screen: string
+  geo: string
+  isp: string
+  productSlug: string
+  planCode: string
+  capturedAt: string
+}
+
 export type CustomerDetail = CustomerRow & {
   externalCustomerId: string | null
   licenses: CustomerLicense[]
   acceptances: CustomerAcceptance[]
+  checkout?: CustomerCheckout | null
 }
 
 export type CustomerListQuery = {

@@ -36,7 +36,7 @@ export function AppShell() {
         />
 
         <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-5 py-4 lg:px-7 lg:py-5">
-          <div className="no-scrollbar min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
+          <div className="table-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
             <Outlet />
           </div>
         </main>

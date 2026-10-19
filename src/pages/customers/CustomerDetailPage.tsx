@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { Link, useParams } from "react-router"
 import { ArrowLeftIcon, CheckCircle2Icon, KeyRoundIcon, PauseCircleIcon, PencilIcon } from "lucide-react"
 import { toast } from "react-toastify"
@@ -6,7 +6,7 @@ import { useAuth } from "@/auth/AuthProvider"
 import { ConfirmDialog } from "@/components/ConfirmDialog"
 import { CopyableText } from "@/components/CopyableText"
 import { StatusBadge } from "@/components/StatusBadge"
-import { ListPageFrame, listTableClass, TableScroll } from "@/components/TableScroll"
+import { listTableClass } from "@/components/TableScroll"
 import { getCustomer, toCustomerError, updateCustomer, type CustomerDetail } from "@/lib/api/customers"
 import { formatCount } from "@/lib/format"
 import { has, P } from "@/lib/permissions"
@@ -124,8 +124,8 @@ export function CustomerDetailPage() {
   }
 
   return (
-    <ListPageFrame>
-      <div className="mb-4 flex shrink-0 items-start justify-between gap-3">
+    <div>
+      <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <Link to="/customers" className="inline-flex items-center gap-1 text-sm text-[#3b6cff] hover:underline">
             <ArrowLeftIcon className="size-3.5" />
@@ -155,12 +155,12 @@ export function CustomerDetailPage() {
       </div>
 
       {error ? (
-        <p className="mb-4 shrink-0 rounded-xl border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#b91c1c]">{error}</p>
+        <p className="mb-4 rounded-xl border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#b91c1c]">{error}</p>
       ) : null}
 
       {customer ? (
         <>
-          <div className="grid shrink-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-2xl border border-[#e8edf5] bg-white p-4 shadow-[0_1px_2px_rgba(16,42,96,0.04)]">
               <p className="text-xs text-[#8b93a7]">Email</p>
               <CopyableText value={customer.email} label="email" className="mt-1 font-medium text-[#0f1f3d]" />
@@ -201,95 +201,112 @@ export function CustomerDetailPage() {
           </div>
 
           {customer.notes ? (
-            <p className="mt-4 shrink-0 rounded-2xl border border-[#e8edf5] bg-white px-4 py-3 text-sm text-[#5b6478]">
+            <p className="mt-4 rounded-2xl border border-[#e8edf5] bg-white px-4 py-3 text-sm text-[#5b6478]">
               {customer.notes}
             </p>
           ) : null}
 
-          <section className="mt-4 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#e8edf5] bg-white shadow-[0_1px_2px_rgba(16,42,96,0.04)]">
-            <div className="flex shrink-0 items-center justify-between border-b border-[#f0f3f8] px-4 py-3">
+          <section className="mt-4 rounded-2xl border border-[#e8edf5] bg-white p-4 shadow-[0_1px_2px_rgba(16,42,96,0.04)]">
+            <h2 className="text-sm font-semibold text-[#0f1f3d]">Checkout session</h2>
+            {customer.checkout ? (
+              <dl className="mt-3 grid grid-cols-1 gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
+                <SessionRow label="IP">
+                  <CopyableText value={customer.checkout.ip} label="ip" className="font-mono text-xs text-[#0f1f3d]" />
+                </SessionRow>
+                <SessionRow label="Device">{customer.checkout.device || "—"}</SessionRow>
+                <SessionRow label="OS">{customer.checkout.os || "—"}</SessionRow>
+                <SessionRow label="Browser">{customer.checkout.browser || "—"}</SessionRow>
+                <SessionRow label="Language">{customer.checkout.language || "—"}</SessionRow>
+                <SessionRow label="Timezone">{customer.checkout.timezone || "—"}</SessionRow>
+                <SessionRow label="Screen">{customer.checkout.screen || "—"}</SessionRow>
+                <SessionRow label="Geo">{customer.checkout.geo || "—"}</SessionRow>
+                <SessionRow label="ISP">{customer.checkout.isp || "—"}</SessionRow>
+              </dl>
+            ) : (
+              <p className="mt-3 text-sm text-[#8b93a7]">No Buy Now session has been captured yet.</p>
+            )}
+          </section>
+
+          <section className="mt-4 rounded-2xl border border-[#e8edf5] bg-white shadow-[0_1px_2px_rgba(16,42,96,0.04)]">
+            <div className="flex items-center justify-between border-b border-[#f0f3f8] px-4 py-3">
               <h2 className="text-sm font-semibold text-[#0f1f3d]">Keys</h2>
               <p className="text-sm text-[#8b93a7]">{formatCount(customer.licenses.length)}</p>
             </div>
-            <TableScroll>
-              <table className={listTableClass}>
-                <thead className="sticky top-0 z-10 bg-white text-[11px] tracking-wide text-[#8b93a7] uppercase">
+            <table className={listTableClass}>
+              <thead className="bg-white text-[11px] tracking-wide text-[#8b93a7] uppercase">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Key</th>
+                  <th className="px-4 py-3 font-medium">Plan</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">Activated</th>
+                  <th className="px-4 py-3 font-medium">Expires</th>
+                </tr>
+              </thead>
+              <tbody>
+                {customer.licenses.length === 0 ? (
                   <tr>
-                    <th className="px-4 py-3 font-medium">Key</th>
-                    <th className="px-4 py-3 font-medium">Plan</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium">Activated</th>
-                    <th className="px-4 py-3 font-medium">Expires</th>
+                    <td colSpan={5} className="px-4 py-10 text-center text-sm text-[#8b93a7]">
+                      No keys linked to this customer.
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {customer.licenses.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-10 text-center text-sm text-[#8b93a7]">
-                        No keys linked to this customer.
+                ) : (
+                  customer.licenses.map((license) => (
+                    <tr key={license.id} className="border-t border-[#f0f3f8]">
+                      <td className="px-4 py-3 font-mono whitespace-nowrap text-[#0f1f3d]">
+                        <CopyableText value={license.key} label="key" className="font-mono text-[#0f1f3d]" />
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-[#5b6478]">{license.planType}</td>
+                      <td className="px-4 py-3">
+                        <StatusBadge tone={license.isRevoked ? "danger" : license.isActive ? "success" : "muted"}>
+                          {license.isRevoked ? "Revoked" : license.isActive ? "Active" : "Inactive"}
+                        </StatusBadge>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-[#8b93a7]">
+                        {license.activatedAt ? formatCreatedAt(license.activatedAt).join(" ") : "—"}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-[#8b93a7]">
+                        {license.expiresAt ? formatCreatedAt(license.expiresAt).join(" ") : "—"}
                       </td>
                     </tr>
-                  ) : (
-                    customer.licenses.map((license) => (
-                      <tr key={license.id} className="border-t border-[#f0f3f8]">
-                        <td className="px-4 py-3 font-mono whitespace-nowrap text-[#0f1f3d]">
-                          <CopyableText value={license.key} label="key" className="font-mono text-[#0f1f3d]" />
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-[#5b6478]">{license.planType}</td>
-                        <td className="px-4 py-3">
-                          <StatusBadge tone={license.isRevoked ? "danger" : license.isActive ? "success" : "muted"}>
-                            {license.isRevoked ? "Revoked" : license.isActive ? "Active" : "Inactive"}
-                          </StatusBadge>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-[#8b93a7]">
-                          {license.activatedAt ? formatCreatedAt(license.activatedAt).join(" ") : "—"}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-[#8b93a7]">
-                          {license.expiresAt ? formatCreatedAt(license.expiresAt).join(" ") : "—"}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </TableScroll>
+                  ))
+                )}
+              </tbody>
+            </table>
           </section>
 
-          <section className="mt-4 shrink-0 overflow-hidden rounded-2xl border border-[#e8edf5] bg-white shadow-[0_1px_2px_rgba(16,42,96,0.04)]">
+          <section className="mt-4 rounded-2xl border border-[#e8edf5] bg-white shadow-[0_1px_2px_rgba(16,42,96,0.04)]">
             <div className="flex items-center justify-between border-b border-[#f0f3f8] px-4 py-3">
               <h2 className="text-sm font-semibold text-[#0f1f3d]">Refund policy</h2>
               <p className="text-sm text-[#8b93a7]">{formatCount(customer.acceptances.length)}</p>
             </div>
-            <TableScroll className="max-h-64 flex-none">
-              <table className={listTableClass}>
-                <thead className="sticky top-0 z-10 bg-white text-[11px] tracking-wide text-[#8b93a7] uppercase">
+            <table className={listTableClass}>
+              <thead className="bg-white text-[11px] tracking-wide text-[#8b93a7] uppercase">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Version</th>
+                  <th className="px-4 py-3 font-medium">Source</th>
+                  <th className="px-4 py-3 font-medium">Accepted</th>
+                </tr>
+              </thead>
+              <tbody>
+                {customer.acceptances.length === 0 ? (
                   <tr>
-                    <th className="px-4 py-3 font-medium">Version</th>
-                    <th className="px-4 py-3 font-medium">Source</th>
-                    <th className="px-4 py-3 font-medium">Accepted</th>
+                    <td colSpan={3} className="px-4 py-8 text-center text-sm text-[#8b93a7]">
+                      No policy acceptance recorded.
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {customer.acceptances.length === 0 ? (
-                    <tr>
-                      <td colSpan={3} className="px-4 py-8 text-center text-sm text-[#8b93a7]">
-                        No policy acceptance recorded.
+                ) : (
+                  customer.acceptances.map((row) => (
+                    <tr key={row.id} className="border-t border-[#f0f3f8]">
+                      <td className="px-4 py-3 whitespace-nowrap font-medium text-[#0f1f3d]">{row.policyVersion}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-[#5b6478]">{formatSource(row.source)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-[#8b93a7]">
+                        {formatCreatedAt(row.acceptedAt).join(" ")}
                       </td>
                     </tr>
-                  ) : (
-                    customer.acceptances.map((row) => (
-                      <tr key={row.id} className="border-t border-[#f0f3f8]">
-                        <td className="px-4 py-3 whitespace-nowrap font-medium text-[#0f1f3d]">{row.policyVersion}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-[#5b6478]">{formatSource(row.source)}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-[#8b93a7]">
-                          {formatCreatedAt(row.acceptedAt).join(" ")}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </TableScroll>
+                  ))
+                )}
+              </tbody>
+            </table>
           </section>
         </>
       ) : null}
@@ -319,7 +336,16 @@ export function CustomerDetailPage() {
           onConfirm={() => void save()}
         />
       ) : null}
-    </ListPageFrame>
+    </div>
+  )
+}
+
+function SessionRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex min-w-0 items-start justify-between gap-4">
+      <dt className="shrink-0 text-[#8b93a7]">{label}</dt>
+      <dd className="min-w-0 wrap-break-word text-right text-[#0f1f3d]">{children}</dd>
+    </div>
   )
 }
 
