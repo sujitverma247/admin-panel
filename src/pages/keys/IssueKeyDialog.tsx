@@ -10,6 +10,7 @@ import {
   KEY_MACHINES_MIN,
   KEY_NAME_MAX,
   KEY_NOTES_MAX,
+  manualKeyPlanOptions,
   type IssueKeyDraft,
   type IssueKeyFieldErrors,
 } from "@/lib/schemas/key"
@@ -52,7 +53,7 @@ export function IssueKeyDialog({
     return () => window.removeEventListener("keydown", onKey)
   }, [onClose, saving])
 
-  const planOptions = plans.length > 0 ? plans : [{ id: 0, code: "1year", displayName: "1 Year", durationDays: 365, defaultMaxMachines: 3, isActive: true }]
+  const planOptions = manualKeyPlanOptions(plans)
 
   return (
     <div
@@ -270,7 +271,11 @@ export function IssueKeyDialog({
                       </option>
                     ))}
                   </select>
-                  {fieldErrors.planType ? <p className="text-[13px] text-[#dc2626]">{fieldErrors.planType}</p> : null}
+                  {fieldErrors.planType ? (
+                    <p className="text-[13px] text-[#dc2626]">{fieldErrors.planType}</p>
+                  ) : (
+                    <p className="text-[12px] text-[#8b93a7]">1–10 years. The term starts when the key is created.</p>
+                  )}
                 </div>
                 <Field
                   id="issue-machines"

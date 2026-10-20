@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest"
-import { emptyIssueKeyDraft, validateEditKeyDraft, validateIssueKeyDraft } from "@/lib/schemas/key"
+import {
+  DEFAULT_MANUAL_YEAR_PLANS,
+  emptyIssueKeyDraft,
+  manualKeyPlanOptions,
+  validateEditKeyDraft,
+  validateIssueKeyDraft,
+} from "@/lib/schemas/key"
 
 describe("issue key draft", () => {
   it("requires product, email, plan, and max devices", () => {
@@ -45,5 +51,25 @@ describe("edit key draft", () => {
       "Enter a valid customer email.",
     )
     expect(validateEditKeyDraft({ customerEmail: "", planType: "", maxMachines: "", notes: "" }).planType).toBe("Plan is required.")
+  })
+})
+
+describe("manual key plan options", () => {
+  it("always offers 1 through 10 years", () => {
+    const options = manualKeyPlanOptions([])
+    expect(options.map((plan) => plan.code)).toEqual(DEFAULT_MANUAL_YEAR_PLANS.map((plan) => plan.code))
+    expect(options[0]?.displayName).toBe("1 Year")
+    expect(options[2]?.displayName).toBe("3 Years")
+    expect(options[9]?.displayName).toBe("10 Years")
+  })
+
+  it("keeps extra catalog plans such as lifetime after the year list", () => {
+    const options = manualKeyPlanOptions([
+      { id: 1, code: "1year", displayName: "Personal 1 Year", durationDays: 365, defaultMaxMachines: 1, isActive: true },
+      { id: 2, code: "lifetime", displayName: "Lifetime", durationDays: 36500, defaultMaxMachines: 3, isActive: true },
+      { id: 3, code: "monthly", displayName: "Monthly", durationDays: 30, defaultMaxMachines: 3, isActive: false },
+    ])
+    expect(options.map((plan) => plan.code)).toEqual([...DEFAULT_MANUAL_YEAR_PLANS.map((plan) => plan.code), "lifetime"])
+    expect(options.find((plan) => plan.code === "1year")?.displayName).toBe("1 Year")
   })
 })

@@ -8,6 +8,7 @@ import {
   KEY_MACHINES_MAX,
   KEY_MACHINES_MIN,
   KEY_NOTES_MAX,
+  manualKeyPlanOptions,
   type EditKeyDraft,
   type EditKeyFieldErrors,
 } from "@/lib/schemas/key"
@@ -42,8 +43,7 @@ export function EditKeyDialog({
     return () => window.removeEventListener("keydown", onKey)
   }, [onClose, saving])
 
-  const planOptions =
-    plans.length > 0 ? plans : [{ id: 0, code: "1year", displayName: "1 Year", durationDays: 365, defaultMaxMachines: 3, isActive: true }]
+  const planOptions = manualKeyPlanOptions(plans)
   const plansWithCurrent = planOptions.some((p) => p.code === draft.planType)
     ? planOptions
     : [...planOptions, { id: 0, code: draft.planType, displayName: draft.planType, durationDays: 0, defaultMaxMachines: Number(draft.maxMachines) || 3, isActive: true }]

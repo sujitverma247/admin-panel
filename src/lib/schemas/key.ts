@@ -1,6 +1,38 @@
 import { z } from "zod"
+import type { CatalogPlanRow } from "@/lib/api/catalog"
 import type { KeyRow } from "@/lib/api/keys"
 import { parseForm, type FieldErrors } from "@/lib/validation"
+
+const YEAR_PLAN_CODE = /^([1-9]|10)year$/i
+
+export const DEFAULT_MANUAL_YEAR_PLANS: CatalogPlanRow[] = Array.from({ length: 10 }, (_, index) => {
+  const years = index + 1
+  return {
+    id: -years,
+    code: `${years}year`,
+    displayName: years === 1 ? "1 Year" : `${years} Years`,
+    durationDays: years * 365,
+    defaultMaxMachines: 3,
+    isActive: true,
+  }
+})
+
+/** Always offer 1–10 years for manual issue/edit. Keep extra catalog plans such as lifetime. */
+export function manualKeyPlanOptions(catalog: CatalogPlanRow[] = []): CatalogPlanRow[] {
+  const extras = catalog.filter((plan) => {
+    const code = plan.code.trim().toLowerCase()
+    return plan.isActive && !YEAR_PLAN_CODE.test(code)
+  })
+  const seen = new Set(DEFAULT_MANUAL_YEAR_PLANS.map((plan) => plan.code))
+  const extraRows: CatalogPlanRow[] = []
+  for (const plan of extras) {
+    const code = plan.code.trim().toLowerCase()
+    if (seen.has(code)) continue
+    seen.add(code)
+    extraRows.push(plan)
+  }
+  return [...DEFAULT_MANUAL_YEAR_PLANS, ...extraRows]
+}
 
 export const KEY_NAME_MAX = 200
 export const KEY_NOTES_MAX = 1024
